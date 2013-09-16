@@ -111,19 +111,24 @@ public class MainActivity extends Activity {
     
     @Override
     public void onPause(){
-    	
+    	//TODO: so, this needs to make sure the connection is maintained but the screen stops writing
     }
     
     @Override
     public void onResume(){
-    	
+    	//TODO: this needs to make sure we're still connectd, and then resume writing to the screen.
     }
     
+    
+    @Override
+    public void onStop(){
+    	//TODO:This needs to keep the connection between devices going, whether or not it should keep tracking is still up for debate
+    }
     
 	public void sendMessage(View view){
     	Intent intent = new Intent(this, DisplayMessageActivity.class);
     
-    	startActivityForResult(intent, 1);
+    	startActivityForResult(intent, 1); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
     }
     
     public void writeCommsToFile(ArrayAdapter<String> prompt){
