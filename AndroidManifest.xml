@@ -37,6 +37,14 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="test.example.helloworld.MainActivity" />
         </activity>
+        <activity
+            android:name="test.example.helloworld.SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName="test.example.helloworld.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="test.example.helloworld.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

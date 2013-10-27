@@ -8,14 +8,7 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".DisplayMessageActivity" >
 
-    <Button
-        android:id="@+id/button3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:text="@string/setBut" />
-        <!--  android:text="@string/test" /> -->
+
 
     <TextView
         android:id="@+id/btStatus"
@@ -26,13 +19,6 @@
         android:layout_marginTop="20dp"  
         android:text="@string/test" />
 
-    <Button
-        android:id="@+id/button2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-		android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        android:text="@string/logBut" />
 
     <ListView
         android:id="@+id/btDevList"
@@ -45,15 +31,8 @@
 
     </ListView>
 
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/btDevList"
-        android:layout_centerHorizontal="true"
-        android:onClick="toSettings"
-        android:text="@string/pairBut" />
+
  
-"
+
 
 </RelativeLayout>

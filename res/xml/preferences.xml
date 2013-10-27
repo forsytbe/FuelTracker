@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+            <Preference 
+                android:title="@string/obd2"
+
+            	android:key="bt_device"
+            	android:defaultValue="@string/default_none"
+            	>
+            	
+                    
+            		 <intent
+            		 	android:action="android.intent.action.VIEW"
+             			android:targetPackage="test.example.helloworld"
+             			android:targetClass="test.example.helloworld.DisplayMessageActivity" /> 
+               	
+            </Preference>
+</PreferenceScreen>

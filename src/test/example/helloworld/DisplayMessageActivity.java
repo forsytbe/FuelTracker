@@ -19,6 +19,7 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DialogFragment;
@@ -35,14 +36,15 @@ import android.widget.TextView;
 import android.support.v4.app.NavUtils;
 import android.annotation.TargetApi;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 
 
 
 public class DisplayMessageActivity extends Activity {
 	
-	protected static final String EXTRA_DEVICE_ADDRESS = null;
-	protected ArrayAdapter<BluetoothDevice> mArrayAdapter;
+	protected static final String DEVICE_DATA = "test.example.helloworld.DEVICE_DATA";
+	protected ArrayAdapter<String> mArrayAdapter;
 	protected BluetoothAdapter mBluetoothAdapter;
 	
 		
@@ -51,7 +53,7 @@ public class DisplayMessageActivity extends Activity {
 			String action = intent.getAction();
 			if(BluetoothDevice.ACTION_FOUND.equals(action)){
 				BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-				mArrayAdapter.add(device);
+				mArrayAdapter.add(device.getName()+"\n"+ device.getAddress());
 			}else{
 				//mArrayAdapter.add("No discoverable Bluetooth devices available");
 			}
@@ -75,7 +77,7 @@ public class DisplayMessageActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setupActionBar();
 		
-		mArrayAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+		mArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
 
 		setContentView(R.layout.activity_display_message);
 		
@@ -83,13 +85,32 @@ public class DisplayMessageActivity extends Activity {
 		int REQUEST_ENABLE_BT = 1;
 		int ACT_RESULT = 1;	
 		
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+    	String deviceName = prefs.getString("bt_device", "None");
+    	if(deviceName.equals("None")){
+    		new AlertDialog.Builder(this)
+    	    .setTitle( "No Default Device" )
+    	    .setMessage( "No default Bluetooth device found.  Connect to a device.")
+    	    .setPositiveButton("OK", new OnClickListener() {
+    	        public void onClick(DialogInterface arg0, int arg1) {
+    	            
+    	        }
+    	    }).show();
+    		
+    	}
+		
+		
+		
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		
 		if(mBluetoothAdapter == null){
 			message = "Bluetooth not supported";
 			finish();
 		}else{
-			message = "Paired Devices";
+			message = "Available Devices:";
+
+			IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+			registerReceiver(mReceiver, filter); // Don't forget to unregister during onDestroy
 			
 			if(!mBluetoothAdapter.isEnabled()){
 				Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -100,17 +121,7 @@ public class DisplayMessageActivity extends Activity {
 				}
 			}
 			
-			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-			
-			if(pairedDevices.size() > 0){
-				for(BluetoothDevice device : pairedDevices){
-					mArrayAdapter.add(device);
-				}
-			}else{
-				message = "No bonded devices found!";
-				AlertBox("noBonds", "No bonded devices found!");
-				
-			}		
+			mBluetoothAdapter.startDiscovery();
 		}
 
 		ListView devListView = (ListView) findViewById(R.id.btDevList);
@@ -119,10 +130,13 @@ public class DisplayMessageActivity extends Activity {
 		devListView.setOnItemClickListener(new OnItemClickListener(){
 			
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-			       BluetoothDevice curDevice = mArrayAdapter.getItem(position);
+					mBluetoothAdapter.cancelDiscovery();
+			      	String deviceData = mArrayAdapter.getItem(position);
 		            Intent intent = new Intent();
-		            intent.putExtra(EXTRA_DEVICE_ADDRESS, curDevice.getAddress());
-
+		            intent.putExtra(DEVICE_DATA, deviceData);
+		            
+		            
+		            
 		            // Set result and finish this Activity
 		            setResult(Activity.RESULT_OK, intent);
 		            finish();
@@ -135,6 +149,21 @@ public class DisplayMessageActivity extends Activity {
 		TextView btStatView = (TextView) findViewById(R.id.btStatus);
 		btStatView.setText(message);		
 	}
+	
+    @Override
+    public void onDestroy(){
+    	unregisterReceiver(mReceiver);
+    	super.onDestroy();
+    	
+    }
+    
+    @Override
+    public void onStop(){
+    	if(mBluetoothAdapter.isDiscovering()){
+    		mBluetoothAdapter.cancelDiscovery();
+    	}
+    	super.onStop();
+    }
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {

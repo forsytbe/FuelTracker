@@ -35,15 +35,17 @@ public class obdService {
 	
 	Context parentContext;
 	private int numSent = 0;
-	public static final int STATE_CONNECTED = 3;
+	public static final int STATE_UNCONNECTED = 0;
+	public static final int STATE_CONNECTED = 1;
 	public int mState = 0;
 	
 	public double vSpeed = 0; //vehicle speed in km/h
 	public double MAF = 0; //mass air flow, g/s
 	public double MPG = 0; //miles/gallon
 	
-	; //this is because device may not send the whole response at once
+
 	
+
  	protected obdService(Context context, Handler handler){
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		mHandler = handler;
@@ -51,17 +53,27 @@ public class obdService {
 	}
 	
 	public synchronized void stop(){
+	    if (mConnectThread != null) {
+	        mConnectThread.cancel();
+	        mConnectThread = null;
+	    }
+	
+	    if (mConnectedThread != null) {
+	        mConnectedThread.cancel();
+	        mConnectedThread = null;
+	    }
+		mState = STATE_UNCONNECTED;
 
-    if (mConnectThread != null) {
-        mConnectThread.cancel();
-        mConnectThread = null;
-    }
 
-    if (mConnectedThread != null) {
-        mConnectedThread.cancel();
-        mConnectedThread = null;
-    }
-
+	}
+	
+	public Boolean isConnected(){
+		if(mState == STATE_CONNECTED){
+			return true;
+		}else{
+			return false;
+		}
+	
 	}
 	
 	private class ConnectThread extends Thread{
@@ -101,12 +113,12 @@ public class obdService {
 				
 			}catch(IOException connectException){
 				
-				final String errMess = connectException.toString();
+				final String errMess = "Device not available.  Please find a device.";
 				
 				mHandler.post(new Runnable(){
 					@Override
 					public void run(){
-						AlertBox("IOExcept", errMess);
+						AlertBox("Bluetooth device not available", errMess);
 					}
 				});
 				
@@ -127,6 +139,7 @@ public class obdService {
 		public void cancel(){
 			try{
 				mmSocket.close();
+				mState = STATE_UNCONNECTED;
 			}catch (IOException e){}
 		}
 		
@@ -162,32 +175,38 @@ public class obdService {
 			int bytes;
 			
 			//first message we want to resest device, turn off echo, try to set protocal to Iso 9141
-			obdCommand = "AT WS\r";
-			write(obdCommand.getBytes());
-			
-			while(true){
-
-				try{
-
-					bytes = mmInStream.read(buffer);
-					
-					String sb = new String(buffer, 0, bytes);
+			if(mmSocket.isConnected()){
+				obdCommand = "AT WS\r";
+				write(obdCommand.getBytes());
 				
-					if(bytes > 0 ){
-						Message message = mHandler.obtainMessage(MainActivity.WRITE_PROMPT, -1, -1);
-
-						Bundle bundle = new Bundle();
-						bundle.putString("commData", sb);
-						message.setData(bundle);
-						message.sendToTarget();
+				while(mmSocket.isConnected()){
+					
+						try{
+		
+							bytes = mmInStream.read(buffer);
+							
+							String sb = new String(buffer, 0, bytes);
 						
-						parseResponse(sb, bytes);	
-						//message = mHandler.obtainMessage(MainActivity.MESSAGE_READ, -1, -1, sb);						
-					}				
-				}catch(IOException e){	
-					break;
+							if(bytes > 0 ){
+								Message message = mHandler.obtainMessage(MainActivity.WRITE_PROMPT, -1, -1);
+		
+								Bundle bundle = new Bundle();
+								bundle.putString("commData", sb);
+								message.setData(bundle);
+								message.sendToTarget();
+								
+								parseResponse(sb, bytes);	
+								//message = mHandler.obtainMessage(MainActivity.MESSAGE_READ, -1, -1, sb);						
+							}				
+						}catch(IOException e){	
+							break;
+						}
 				}
-			}	
+				
+				
+			}
+			mState = 0;
+			cancel();
 		}
 		
 		public void parseResponse(String response, int numBytes){
@@ -278,6 +297,8 @@ public class obdService {
 		public void cancel(){
 			try{
 				mmSocket.close();
+				mState = STATE_UNCONNECTED;
+
 			}catch(IOException e){}
 		}	
 	};
@@ -308,7 +329,7 @@ public class obdService {
 	public void AlertBox( String title, String message ){
 	    new AlertDialog.Builder(parentContext)
 	    .setTitle( title )
-	    .setMessage( message + " Press OK to exit." )
+	    .setMessage( message)
 	    .setPositiveButton("OK", new OnClickListener() {
 	        public void onClick(DialogInterface arg0, int arg1) {
 	          //finish();

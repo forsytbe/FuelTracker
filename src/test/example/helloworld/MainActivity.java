@@ -1,8 +1,10 @@
 package test.example.helloworld;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -11,14 +13,19 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.text.format.Time;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
+import android.content.SharedPreferences.Editor;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -33,7 +40,7 @@ public class MainActivity extends Activity {
 	ArrayList<String> mpgDataList = new ArrayList<String>();
 	TextView mainText;
 	
-	public static final int WRITE_SCREEN = 1;
+	public static final int WRITE_SCREEN = 1;	        
 	public static final int WRITE_PROMPT = 2;
 	public static final int WRITE_FILE = 3;
 	public static final int FINISH_IT = 4;
@@ -43,6 +50,10 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        
         cmdPrompt = new ArrayAdapter<String>(this, android.R.layout.list_content);
         mainText = (TextView) findViewById(R.id.mainDisplay);
         
@@ -61,11 +72,18 @@ public class MainActivity extends Activity {
     	public void handleMessage(Message msg) {
 
     		switch (msg.what) {
+    		
     		case WRITE_PROMPT:
+    			
     			cmdPrompt.add(msg.getData().getString("commData"));
+    			if(cmdPrompt.getCount() >= 128){
+    				writeCommsToFile();
+    			}
     			break;
     		case WRITE_FILE:
-    			writeCommsToFile(cmdPrompt);
+    			writeCommsToFile();
+    			writeMpgData();
+    			
     			break;
     		case WRITE_SCREEN:
     			Time now = new Time();
@@ -74,6 +92,10 @@ public class MainActivity extends Activity {
     					+ " " + Integer.toString(now.hour) + ":" + Integer.toString(now.minute) + ":" +Integer.toString(now.second);
     			
     			mpgDataList.add(curTime+ ": " + msg.getData().getString("mpgData") + "\r");
+    			if(mpgDataList.size() >=128){
+    				writeMpgData();
+    			}
+    			
     			mainText.setText(msg.getData().getString("mpgData"));
     			break;
     			
@@ -81,6 +103,7 @@ public class MainActivity extends Activity {
     	}	
     };
     
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -88,20 +111,41 @@ public class MainActivity extends Activity {
         return true;
     }
     
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                // Display the fragment as the main content.
+            	Intent intent = new Intent(this, SettingsActivity.class);
+            	startActivityForResult(intent, 1);
+                return true;
+                
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+    
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-            // When DeviceListActivity returns with a device to connect
-            if (resultCode == Activity.RESULT_OK) {
-                connectDevice(data);
-            }
-        
-
+  
+    	if (resultCode == Activity.RESULT_OK) {
+    		
+			SharedPreferences.Editor prefs = PreferenceManager.getDefaultSharedPreferences(this).edit();
+	        String deviceData = data.getExtras()
+	                .getString(DisplayMessageActivity.DEVICE_DATA);
+	        prefs.putString("bt_device", deviceData).apply();
+	        
+		}
+	    		
+    		
     }
 
-    private void connectDevice(Intent data) {
+    private void connectDevice(String deviceData) {
         // Get the device MAC address
-        String address = data.getExtras()
-            .getString(DisplayMessageActivity.EXTRA_DEVICE_ADDRESS);
+
+String address = deviceData.substring(deviceData.indexOf('\n')+1);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
@@ -109,71 +153,97 @@ public class MainActivity extends Activity {
         
     }
     
-    @Override
-    public void onPause(){
-    	//TODO: so, this needs to make sure the connection is maintained but the screen stops writing
+    public void findDevice(View view){
+    	Intent intent = new Intent(this, DisplayMessageActivity.class);
+        
+		startActivityForResult(intent, 0);
+    	
     }
     
     @Override
-    public void onResume(){
-    	//TODO: this needs to make sure we're still connectd, and then resume writing to the screen.
+    public void onRestart(){
+
+    	super.onRestart();
     }
-    
+
     
     @Override
     public void onStop(){
     	//TODO:This needs to keep the connection between devices going, whether or not it should keep tracking is still up for debate
+
+    	mobdService.stop();
+    	if(mpgDataList.size()>0){
+    		Message message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
+    		message.sendToTarget();
+    	}
+
+		super.onStop();
     }
     
-	public void sendMessage(View view){
-    	Intent intent = new Intent(this, DisplayMessageActivity.class);
+	public void startService(View view){
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+    	
+    	String deviceName = prefs.getString("bt_device", "None");
+    	if(deviceName.equals("None")){
     
-    	startActivityForResult(intent, 1); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
+    	
+    		Intent intent = new Intent(this, DisplayMessageActivity.class);
+    
+    		startActivityForResult(intent, 0); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
+    	}else{
+    		connectDevice(deviceName);
+    	}
     }
     
-    public void writeCommsToFile(ArrayAdapter<String> prompt){
-    	File file = new File(Environment.getExternalStorageDirectory(), "hello_world_data.txt");
-		OutputStream os = null;
+    public void writeCommsToFile(){
+    	
+    	File file = new File(Environment.getExternalStorageDirectory(), "ELM327comm_data.txt");
+		
 		String str = "";
 		try {
-			os = new FileOutputStream(file, true);
-		} catch (FileNotFoundException e1) {}
+			 BufferedWriter bW;
+	
+	         bW = new BufferedWriter(new FileWriter(file,true));
+	    	
+	    	for(int i =0; i< cmdPrompt.getCount(); ++i){
+	    		str = str.concat(cmdPrompt.getItem(i));
+	    	}
+	    	cmdPrompt.clear();
+	    	
+			bW.write(str);
+			bW.newLine();
+            bW.flush();
+            bW.close();
+			
+		}catch (IOException e) {}
 		
-    	
-    	
-    	for(int i =0; i< prompt.getCount(); ++i){
-    		str = str.concat(prompt.getItem(i));
-    	}
-    	try {
-			os.write(str.getBytes());
-			finish();
-		} catch (IOException e) {
-			try {
-				os.close();
-			} catch (IOException e1) {}
-		}
     }
 
-    public void writeAndFinish(View view){
+    public void writeMpgData(){
     	mobdService.stop();
     	File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
-		OutputStream os = null;
+
 		
+		String str = "";
 		try {
-			os = new FileOutputStream(file, true);
-		} catch (FileNotFoundException e1) {}
-		
-		for(int i = 0; i< mpgDataList.size(); ++i){
-			try {
-				os.write(mpgDataList.get(i).getBytes());
-			} catch (IOException e) {
-				try {
-					os.close();
-				} catch (IOException e1) {}
-			}
+			 BufferedWriter bW;
+	
+	         bW = new BufferedWriter(new FileWriter(file,true));
+	    	
+	    	for(int i =0; i< mpgDataList.size(); ++i){
+	    		str = str.concat(mpgDataList.get(i));
+	    	}
+	    	mpgDataList.clear();
+	    	
+			bW.write(str);
+			bW.newLine();
+            bW.flush();
+            bW.close();
+			
+		}catch (IOException e) {
+			
 		}
-		
-		finish();
+
     }
     
 	public void AlertBox( String title, String message ){
@@ -182,7 +252,7 @@ public class MainActivity extends Activity {
 	    .setMessage( message + "\n Please Press OK" )
 	    .setPositiveButton("OK", new OnClickListener() {
 	        public void onClick(DialogInterface arg0, int arg1) {
-	          //finish();
+	   
 	        }
 	    }).show();
 	  }
