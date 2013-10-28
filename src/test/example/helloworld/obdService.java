@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.text.format.Time;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
@@ -81,9 +82,9 @@ public class obdService {
 		private final BluetoothSocket mmSocket;
 		private final BluetoothDevice mmDevice;
 		protected BluetoothAdapter mBluetoothAdapter;
+		private boolean connected = false;		
 		
-		
- 		public ConnectThread(BluetoothDevice device){
+		public ConnectThread(BluetoothDevice device){
 			BluetoothSocket tmp = null;
 			mmDevice = device;
 
@@ -100,7 +101,7 @@ public class obdService {
 			
 			try{
 				mmSocket.connect();
-				
+				connected = true;
 				mHandler.post(new Runnable(){
 					@Override
 					public void run(){
@@ -112,7 +113,7 @@ public class obdService {
 			
 				
 			}catch(IOException connectException){
-				
+				connected =false;
 				final String errMess = "Device not available.  Please find a device.";
 				
 				mHandler.post(new Runnable(){
@@ -134,6 +135,14 @@ public class obdService {
 			mState = STATE_CONNECTED;
 			connected(mmSocket);
 			
+		}
+		
+		public boolean isConnected(){
+			if(connected){
+				return true;
+			}else{
+				return false;
+			}
 		}
 		
 		public void cancel(){
@@ -176,6 +185,15 @@ public class obdService {
 			
 			//first message we want to resest device, turn off echo, try to set protocal to Iso 9141
 			if(mmSocket.isConnected()){
+
+				
+				Message message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
+				
+				Bundle bundle = new Bundle();
+				bundle.putBoolean("writeTime",true);
+				message.setData(bundle);
+				message.sendToTarget();
+				
 				obdCommand = "AT WS\r";
 				write(obdCommand.getBytes());
 				
@@ -188,9 +206,10 @@ public class obdService {
 							String sb = new String(buffer, 0, bytes);
 						
 							if(bytes > 0 ){
-								Message message = mHandler.obtainMessage(MainActivity.WRITE_PROMPT, -1, -1);
+								message = mHandler.obtainMessage(MainActivity.WRITE_PROMPT, -1, -1);
 		
-								Bundle bundle = new Bundle();
+								bundle.clear();
+								
 								bundle.putString("commData", sb);
 								message.setData(bundle);
 								message.sendToTarget();
@@ -203,7 +222,14 @@ public class obdService {
 						}
 				}
 				
+
 				
+				message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
+				bundle.clear();
+				
+				bundle.putBoolean("writeTime",true);
+				message.setData(bundle);
+				message.sendToTarget();
 			}
 			mState = 0;
 			cancel();
@@ -303,9 +329,14 @@ public class obdService {
 		}	
 	};
 
-	public synchronized void connect(BluetoothDevice device){
+	public synchronized boolean connect(BluetoothDevice device){
 		mConnectThread = new ConnectThread(device);
 		mConnectThread.start();
+		if(mConnectThread.isConnected()){
+			return true;
+		}else{
+			return false;
+		}
 	}
 	
 	public synchronized void connected(BluetoothSocket socket){

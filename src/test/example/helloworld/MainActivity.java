@@ -27,6 +27,7 @@ import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences.Editor;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.bluetooth.*;
@@ -65,6 +66,34 @@ public class MainActivity extends Activity {
 			mobdService = new obdService(this, mHandler);
 		}
     }
+    
+    @Override
+    protected void onStart(){
+    	super.onStart();
+    	Button findDev = (Button) findViewById(R.id.findDevice);
+    	Button startOrSave = (Button) findViewById(R.id.start_or_save);
+    	if(!mobdService.isConnected()){
+    		startOrSave.setText(R.string.start);
+    		startOrSave.setOnClickListener(new View.OnClickListener() {
+    			@Override
+                public void onClick(View v) {
+               
+                	startService(v);
+
+                }
+            });
+    		findDev.setVisibility(Button.VISIBLE);
+    	}else{
+    		startOrSave.setText(R.string.saveBut);
+    		startOrSave.setOnClickListener(new View.OnClickListener() {
+    			@Override
+                public void onClick(View v) {
+                	endAndSave(v);
+                }
+            });
+    		findDev.setVisibility(Button.GONE);
+    	}
+    }
 
     //currently the handler isn't too helpful, and is used only to log the retrieved data
     Handler mHandler = new Handler(){
@@ -76,24 +105,28 @@ public class MainActivity extends Activity {
     		case WRITE_PROMPT:
     			
     			cmdPrompt.add(msg.getData().getString("commData"));
-    			if(cmdPrompt.getCount() >= 128){
+    			if(cmdPrompt.getCount()>=128){
     				writeCommsToFile();
     			}
+    			
+    			
     			break;
     		case WRITE_FILE:
-    			writeCommsToFile();
-    			writeMpgData();
+    			
+    				
+    				writeCommsToFile();
+    				writeMpgData(msg.getData().getBoolean("writeTime"));
+    			
     			
     			break;
     		case WRITE_SCREEN:
     			Time now = new Time();
     			now.setToNow();
-    			String curTime = Integer.toString(now.year)+"-"+Integer.toString(now.month+1)+"-"+Integer.toString(now.monthDay)
-    					+ " " + Integer.toString(now.hour) + ":" + Integer.toString(now.minute) + ":" +Integer.toString(now.second);
+    			String curTime = Integer.toString(now.hour) + ":" + Integer.toString(now.minute) + ":" +Integer.toString(now.second);
     			
-    			mpgDataList.add(curTime+ ": " + msg.getData().getString("mpgData") + "\r");
+    			mpgDataList.add("\t" + curTime+ ":> " + msg.getData().getString("mpgData") + "\r");
     			if(mpgDataList.size() >=128){
-    				writeMpgData();
+    				writeMpgData(false);
     			}
     			
     			mainText.setText(msg.getData().getString("mpgData"));
@@ -142,14 +175,18 @@ public class MainActivity extends Activity {
     		
     }
 
-    private void connectDevice(String deviceData) {
+    private boolean connectDevice(String deviceData) {
         // Get the device MAC address
 
-String address = deviceData.substring(deviceData.indexOf('\n')+1);
+    	String address = deviceData.substring(deviceData.indexOf('\n')+1);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
-        mobdService.connect(device);
+        if(mobdService.connect(device)){
+        	return true;
+        }else{
+        	return false;
+        }
         
     }
     
@@ -172,10 +209,10 @@ String address = deviceData.substring(deviceData.indexOf('\n')+1);
     	//TODO:This needs to keep the connection between devices going, whether or not it should keep tracking is still up for debate
 
     	mobdService.stop();
-    	if(mpgDataList.size()>0){
-    		Message message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
-    		message.sendToTarget();
-    	}
+	    	if(mpgDataList.size()>0){
+	    		Message message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
+	    		message.sendToTarget();
+	    	}
 
 		super.onStop();
     }
@@ -191,10 +228,41 @@ String address = deviceData.substring(deviceData.indexOf('\n')+1);
     
     		startActivityForResult(intent, 0); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
     	}else{
-    		connectDevice(deviceName);
+    		Button startOrSave = (Button) findViewById(R.id.start_or_save);
+    		Button findDev = (Button) findViewById(R.id.findDevice);
+    		if(!connectDevice(deviceName)){
+        		startOrSave.setText(R.string.start);
+        		startOrSave.setOnClickListener(new View.OnClickListener() {
+        			@Override
+                    public void onClick(View v) {
+                   
+                    	startService(v);
+
+                    }
+                });
+        		findDev.setVisibility(Button.VISIBLE);
+        	}else{
+        		startOrSave.setText(R.string.saveBut);
+        		startOrSave.setOnClickListener(new View.OnClickListener() {
+        			@Override
+                    public void onClick(View v) {
+                    	endAndSave(v);
+                    }
+                });
+        		findDev.setVisibility(Button.GONE);
+        	
+        		
+    		}
+    		
     	}
     }
-    
+  
+	public void endAndSave(View view){
+		writeCommsToFile();
+		writeMpgData(true);
+		mobdService.stop();
+	}
+	
     public void writeCommsToFile(){
     	
     	File file = new File(Environment.getExternalStorageDirectory(), "ELM327comm_data.txt");
@@ -219,8 +287,8 @@ String address = deviceData.substring(deviceData.indexOf('\n')+1);
 		
     }
 
-    public void writeMpgData(){
-    	mobdService.stop();
+    public void writeMpgData(boolean appendTime){
+    	
     	File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
 
 		
@@ -233,6 +301,14 @@ String address = deviceData.substring(deviceData.indexOf('\n')+1);
 	    	for(int i =0; i< mpgDataList.size(); ++i){
 	    		str = str.concat(mpgDataList.get(i));
 	    	}
+	    	if(appendTime){
+				Time now = new Time();
+				now.setToNow();
+				String date = Integer.toString(now.year)+"-"+Integer.toString(now.month+1)+"-"+Integer.toString(now.monthDay) +"\r";
+		    
+				str = str.concat(date);
+	    	}
+	    	
 	    	mpgDataList.clear();
 	    	
 			bW.write(str);

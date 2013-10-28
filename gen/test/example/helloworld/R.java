@@ -30,7 +30,7 @@ public final class R {
         public static final int findDevice=0x7f090005;
         public static final int helloWorld=0x7f090002;
         public static final int mainDisplay=0x7f090003;
-        public static final int start=0x7f090004;
+        public static final int start_or_save=0x7f090004;
     }
     public static final class layout {
         public static final int activity_display_message=0x7f030000;

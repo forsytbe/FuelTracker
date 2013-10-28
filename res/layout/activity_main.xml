@@ -26,14 +26,14 @@
         android:textSize="72sp" />
 
     <Button
-        android:id="@+id/start"
+        android:id="@+id/start_or_save"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/findDevice"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="14dp"
-        android:onClick="startService"
-        android:text="@string/start" />
+        
+         />
 
     <Button
         android:id="@+id/findDevice"
@@ -42,7 +42,7 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="47dp"
-        android:onClick="findDevice"
-        android:text="@string/find_device" />
+      	android:onClick="findDevice"
+      	android:text= "@string/find_device" />"
 
 </RelativeLayout>
