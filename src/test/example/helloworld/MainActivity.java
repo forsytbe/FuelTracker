@@ -115,6 +115,7 @@ public class MainActivity extends Activity {
     			
     				
     				writeCommsToFile();
+    				
     				writeMpgData(msg.getData().getBoolean("writeTime"));
     			
     			
