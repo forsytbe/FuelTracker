@@ -82,7 +82,7 @@ public class obdService {
 		private final BluetoothSocket mmSocket;
 		private final BluetoothDevice mmDevice;
 		protected BluetoothAdapter mBluetoothAdapter;
-		private boolean connected = false;		
+		
 		
 		public ConnectThread(BluetoothDevice device){
 			BluetoothSocket tmp = null;
@@ -101,7 +101,7 @@ public class obdService {
 			
 			try{
 				mmSocket.connect();
-				connected = true;
+				
 				mHandler.post(new Runnable(){
 					@Override
 					public void run(){
@@ -109,11 +109,13 @@ public class obdService {
 					}
 					
 				});
-				
+				Message message = mHandler.obtainMessage(MainActivity.CONNECT_SUCCESS, -1, -1);
+
+				message.sendToTarget();
 			
 				
 			}catch(IOException connectException){
-				connected =false;
+		
 				final String errMess = "Device not available.  Please find a device.";
 				
 				mHandler.post(new Runnable(){
@@ -122,6 +124,10 @@ public class obdService {
 						AlertBox("Bluetooth device not available", errMess);
 					}
 				});
+				Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, -1, -1);
+
+				message.sendToTarget();
+				
 				
 				try{
 					mmSocket.close();
@@ -137,13 +143,7 @@ public class obdService {
 			
 		}
 		
-		public boolean isConnected(){
-			if(connected){
-				return true;
-			}else{
-				return false;
-			}
-		}
+
 		
 		public void cancel(){
 			try{
@@ -329,14 +329,10 @@ public class obdService {
 		}	
 	};
 
-	public synchronized boolean connect(BluetoothDevice device){
+	public synchronized void connect(BluetoothDevice device){
 		mConnectThread = new ConnectThread(device);
 		mConnectThread.start();
-		if(mConnectThread.isConnected()){
-			return true;
-		}else{
-			return false;
-		}
+
 	}
 	
 	public synchronized void connected(BluetoothSocket socket){

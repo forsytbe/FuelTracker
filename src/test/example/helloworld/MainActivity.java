@@ -45,6 +45,8 @@ public class MainActivity extends Activity {
 	public static final int WRITE_PROMPT = 2;
 	public static final int WRITE_FILE = 3;
 	public static final int FINISH_IT = 4;
+	public static final int CONNECT_SUCCESS = 5;
+	public static final int CONNECT_FAILURE = 6;
 	
 
     @Override
@@ -133,6 +135,31 @@ public class MainActivity extends Activity {
     			mainText.setText(msg.getData().getString("mpgData"));
     			break;
     			
+    		case CONNECT_SUCCESS:
+    			Button startOrSave = (Button) findViewById(R.id.start_or_save);
+        		Button findDev = (Button) findViewById(R.id.findDevice);
+        		startOrSave.setText(R.string.saveBut);
+        		startOrSave.setOnClickListener(new View.OnClickListener() {
+        			@Override
+                    public void onClick(View v) {
+                    	endAndSave(v);
+                    }
+                });
+        		findDev.setVisibility(Button.GONE);
+        		
+    		case CONNECT_FAILURE:
+    			startOrSave = (Button) findViewById(R.id.start_or_save);
+    			findDev = (Button) findViewById(R.id.findDevice);
+        		startOrSave.setText(R.string.start);
+        		startOrSave.setOnClickListener(new View.OnClickListener() {
+        			@Override
+                    public void onClick(View v) {
+                   
+                    	startService(v);
+
+                    }
+                });
+        		findDev.setVisibility(Button.VISIBLE);
     		}
     	}	
     };
@@ -176,18 +203,16 @@ public class MainActivity extends Activity {
     		
     }
 
-    private boolean connectDevice(String deviceData) {
+    private void connectDevice(String deviceData) {
         // Get the device MAC address
 
     	String address = deviceData.substring(deviceData.indexOf('\n')+1);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
-        if(mobdService.connect(device)){
-        	return true;
-        }else{
-        	return false;
-        }
+        mobdService.connect(device);
+
+        
         
     }
     
@@ -229,32 +254,10 @@ public class MainActivity extends Activity {
     
     		startActivityForResult(intent, 0); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
     	}else{
-    		Button startOrSave = (Button) findViewById(R.id.start_or_save);
-    		Button findDev = (Button) findViewById(R.id.findDevice);
-    		if(!connectDevice(deviceName)){
-        		startOrSave.setText(R.string.start);
-        		startOrSave.setOnClickListener(new View.OnClickListener() {
-        			@Override
-                    public void onClick(View v) {
-                   
-                    	startService(v);
-
-                    }
-                });
-        		findDev.setVisibility(Button.VISIBLE);
-        	}else{
-        		startOrSave.setText(R.string.saveBut);
-        		startOrSave.setOnClickListener(new View.OnClickListener() {
-        			@Override
-                    public void onClick(View v) {
-                    	endAndSave(v);
-                    }
-                });
-        		findDev.setVisibility(Button.GONE);
-        	
-        		
-    		}
     		
+    		connectDevice(deviceName);
+
+
     	}
     }
   
