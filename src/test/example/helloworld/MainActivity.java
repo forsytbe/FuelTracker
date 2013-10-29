@@ -261,15 +261,30 @@ public class MainActivity extends Activity {
     }
   
 	public void endAndSave(){
-		writeCommsToFile();
-		writeMpgData(true);
-		mobdService.stop();
-		File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
-		MediaScannerConnection.scanFile(this,  new String[] {file.toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
-		      public void onScanCompleted(String path, Uri uri) {
+		if(mobdService.isConnected()){
+			mobdService.stop();
+	
+			writeCommsToFile();
+			writeMpgData(true);
+			File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
+			MediaScannerConnection.scanFile(this,  new String[] {file.toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
+			      public void onScanCompleted(String path, Uri uri) {
+	
+			      }
+			 });
+		}
+		Button startOrSave = (Button) findViewById(R.id.start_or_save);
+		Button findDev = (Button) findViewById(R.id.find_device);
+		startOrSave.setText(R.string.start);
+		startOrSave.setOnClickListener(new View.OnClickListener() {
+			@Override
+            public void onClick(View v) {
+           
+            	startService();
 
-		      }
-		 });
+            }
+        });
+		findDev.setVisibility(Button.VISIBLE);
 		 
 	}
 	

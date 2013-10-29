@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -178,12 +179,14 @@ public class obdService {
 			mmOutStream = tmpOut;
 		}
 		
+		@SuppressLint("NewApi")
 		public void run(){
 
 			byte[] buffer = new byte[8];
 			int bytes;
 			
 			//first message we want to resest device, turn off echo, try to set protocal to Iso 9141
+			//isConnected is API 14 or greater
 			if(mmSocket.isConnected()){
 
 				
@@ -193,7 +196,7 @@ public class obdService {
 				bundle.putBoolean("writeTime",true);
 				message.setData(bundle);
 				message.sendToTarget();
-				bundle.clear();
+				
 				
 				obdCommand = "AT WS\r";
 				write(obdCommand.getBytes());
@@ -210,11 +213,11 @@ public class obdService {
 								message = mHandler.obtainMessage(MainActivity.WRITE_PROMPT, -1, -1);
 		
 								
-								
+								bundle = new Bundle();
 								bundle.putString("commData", sb);
 								message.setData(bundle);
 								message.sendToTarget();
-								bundle.clear();
+								
 								parseResponse(sb, bytes);	
 								//message = mHandler.obtainMessage(MainActivity.MESSAGE_READ, -1, -1, sb);						
 							}				
@@ -223,14 +226,6 @@ public class obdService {
 						}
 				}
 				
-
-				
-				message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
-				
-				
-				bundle.putBoolean("writeTime",true);
-				message.setData(bundle);
-				message.sendToTarget();
 			}
 			mState = 0;
 			cancel();
@@ -240,8 +235,8 @@ public class obdService {
 			String tmpStr = new String();
 		
 			int byteOne, byteTwo;
+			Bundle bundle = new Bundle();
 			
-			Bundle bundle = new Bundle();	
 			
 			if(response.charAt(response.length()-1) == '>'){
 				switch(numSent){
@@ -264,7 +259,7 @@ public class obdService {
 					break;
 				}
 				Message message = mHandler.obtainMessage(MainActivity.WRITE_PROMPT, -1, -1);
-
+				
 				bundle.putString("commData", obdCommand);
 				message.setData(bundle);
 				message.sendToTarget();
@@ -298,7 +293,7 @@ public class obdService {
 
 					tmpStr = "\r\rVehicle Speed: " + Double.toString(vSpeed) + "\rMass Air Flow: "
 							+ Double.toString(MAF) + "\rMiles per Gallon: " + Double.toString(MPG) + "\r\r";
-
+					bundle = new Bundle();
 					bundle.putString("mpgData", Double.toString(MPG));
 					Message calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, -1, -1);
 					calcMessage.setData(bundle);
