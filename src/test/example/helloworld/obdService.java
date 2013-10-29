@@ -193,6 +193,7 @@ public class obdService {
 				bundle.putBoolean("writeTime",true);
 				message.setData(bundle);
 				message.sendToTarget();
+				bundle.clear();
 				
 				obdCommand = "AT WS\r";
 				write(obdCommand.getBytes());
@@ -208,12 +209,12 @@ public class obdService {
 							if(bytes > 0 ){
 								message = mHandler.obtainMessage(MainActivity.WRITE_PROMPT, -1, -1);
 		
-								bundle.clear();
+								
 								
 								bundle.putString("commData", sb);
 								message.setData(bundle);
 								message.sendToTarget();
-								
+								bundle.clear();
 								parseResponse(sb, bytes);	
 								//message = mHandler.obtainMessage(MainActivity.MESSAGE_READ, -1, -1, sb);						
 							}				
@@ -225,7 +226,7 @@ public class obdService {
 
 				
 				message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
-				bundle.clear();
+				
 				
 				bundle.putBoolean("writeTime",true);
 				message.setData(bundle);

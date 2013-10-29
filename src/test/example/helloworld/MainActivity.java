@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -26,6 +28,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences.Editor;
+import android.net.Uri;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -80,7 +83,7 @@ public class MainActivity extends Activity {
     			@Override
                 public void onClick(View v) {
                
-                	startService(v);
+                	startService();
 
                 }
             });
@@ -90,7 +93,7 @@ public class MainActivity extends Activity {
     		startOrSave.setOnClickListener(new View.OnClickListener() {
     			@Override
                 public void onClick(View v) {
-                	endAndSave(v);
+                	endAndSave();
                 }
             });
     		findDev.setVisibility(Button.GONE);
@@ -117,8 +120,8 @@ public class MainActivity extends Activity {
     			
     				
     				writeCommsToFile();
-    				
-    				writeMpgData(msg.getData().getBoolean("writeTime"));
+    				writeMpgData(true); //write_file message is only sent when the time should be appended (pass true)
+    				//writeMpgData(msg.getData().getBoolean("writeTime"));
     			
     			
     			break;
@@ -127,7 +130,7 @@ public class MainActivity extends Activity {
     			now.setToNow();
     			String curTime = Integer.toString(now.hour) + ":" + Integer.toString(now.minute) + ":" +Integer.toString(now.second);
     			
-    			mpgDataList.add("\t" + curTime+ ":> " + msg.getData().getString("mpgData") + "\r");
+    			mpgDataList.add("\t" + curTime+ "> " + msg.getData().getString("mpgData") + "\r");
     			if(mpgDataList.size() >=128){
     				writeMpgData(false);
     			}
@@ -142,7 +145,7 @@ public class MainActivity extends Activity {
         		startOrSave.setOnClickListener(new View.OnClickListener() {
         			@Override
                     public void onClick(View v) {
-                    	endAndSave(v);
+                    	endAndSave();
                     }
                 });
         		findDev.setVisibility(Button.GONE);
@@ -155,7 +158,7 @@ public class MainActivity extends Activity {
         			@Override
                     public void onClick(View v) {
                    
-                    	startService(v);
+                    	startService();
 
                     }
                 });
@@ -234,16 +237,12 @@ public class MainActivity extends Activity {
     public void onStop(){
     	//TODO:This needs to keep the connection between devices going, whether or not it should keep tracking is still up for debate
 
-    	mobdService.stop();
-	    	if(mpgDataList.size()>0){
-	    		Message message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
-	    		message.sendToTarget();
-	    	}
+    	endAndSave();
 
 		super.onStop();
     }
     
-	public void startService(View view){
+	public void startService(){
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     	
     	String deviceName = prefs.getString("bt_device", "None");
@@ -261,10 +260,17 @@ public class MainActivity extends Activity {
     	}
     }
   
-	public void endAndSave(View view){
+	public void endAndSave(){
 		writeCommsToFile();
 		writeMpgData(true);
 		mobdService.stop();
+		File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
+		MediaScannerConnection.scanFile(this,  new String[] {file.toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
+		      public void onScanCompleted(String path, Uri uri) {
+
+		      }
+		 });
+		 
 	}
 	
     public void writeCommsToFile(){
