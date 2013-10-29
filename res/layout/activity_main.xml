@@ -29,14 +29,14 @@
         android:id="@+id/start_or_save"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/findDevice"
+        android:layout_above="@+id/find_device"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="14dp"
         
          />
 
     <Button
-        android:id="@+id/findDevice"
+        android:id="@+id/find_device"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"

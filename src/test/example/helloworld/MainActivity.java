@@ -75,7 +75,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart(){
     	super.onStart();
-    	Button findDev = (Button) findViewById(R.id.findDevice);
+    	Button findDev = (Button) findViewById(R.id.find_device);
     	Button startOrSave = (Button) findViewById(R.id.start_or_save);
     	if(!mobdService.isConnected()){
     		startOrSave.setText(R.string.start);
@@ -104,7 +104,8 @@ public class MainActivity extends Activity {
     Handler mHandler = new Handler(){
     	@Override
     	public void handleMessage(Message msg) {
-
+			Button startOrSave = (Button) findViewById(R.id.start_or_save);
+    		Button findDev = (Button) findViewById(R.id.find_device);
     		switch (msg.what) {
     		
     		case WRITE_PROMPT:
@@ -139,8 +140,7 @@ public class MainActivity extends Activity {
     			break;
     			
     		case CONNECT_SUCCESS:
-    			Button startOrSave = (Button) findViewById(R.id.start_or_save);
-        		Button findDev = (Button) findViewById(R.id.findDevice);
+
         		startOrSave.setText(R.string.saveBut);
         		startOrSave.setOnClickListener(new View.OnClickListener() {
         			@Override
@@ -149,10 +149,10 @@ public class MainActivity extends Activity {
                     }
                 });
         		findDev.setVisibility(Button.GONE);
+        		break;
         		
     		case CONNECT_FAILURE:
-    			startOrSave = (Button) findViewById(R.id.start_or_save);
-    			findDev = (Button) findViewById(R.id.findDevice);
+
         		startOrSave.setText(R.string.start);
         		startOrSave.setOnClickListener(new View.OnClickListener() {
         			@Override
@@ -163,6 +163,7 @@ public class MainActivity extends Activity {
                     }
                 });
         		findDev.setVisibility(Button.VISIBLE);
+        		break;
     		}
     	}	
     };
@@ -235,7 +236,6 @@ public class MainActivity extends Activity {
     
     @Override
     public void onStop(){
-    	//TODO:This needs to keep the connection between devices going, whether or not it should keep tracking is still up for debate
 
     	endAndSave();
 
@@ -282,16 +282,17 @@ public class MainActivity extends Activity {
 			 BufferedWriter bW;
 	
 	         bW = new BufferedWriter(new FileWriter(file,true));
-	    	
-	    	for(int i =0; i< cmdPrompt.getCount(); ++i){
-	    		str = str.concat(cmdPrompt.getItem(i));
+	    	if(cmdPrompt.getCount() >0){
+		    	for(int i =0; i< cmdPrompt.getCount(); ++i){
+		    		str = str.concat(cmdPrompt.getItem(i));
+		    	}
+		    	cmdPrompt.clear();
+		    	
+				bW.write(str);
+				bW.newLine();
+	            bW.flush();
+	            bW.close();
 	    	}
-	    	cmdPrompt.clear();
-	    	
-			bW.write(str);
-			bW.newLine();
-            bW.flush();
-            bW.close();
 			
 		}catch (IOException e) {}
 		
@@ -307,10 +308,13 @@ public class MainActivity extends Activity {
 			 BufferedWriter bW;
 	
 	         bW = new BufferedWriter(new FileWriter(file,true));
-	    	
-	    	for(int i =0; i< mpgDataList.size(); ++i){
-	    		str = str.concat(mpgDataList.get(i));
+	    	if(mpgDataList.size()>0){	
+		    	for(int i =0; i< mpgDataList.size(); ++i){
+		    		str = str.concat(mpgDataList.get(i));
+		    	}
+		    	mpgDataList.clear();
 	    	}
+
 	    	if(appendTime){
 				Time now = new Time();
 				now.setToNow();
@@ -319,7 +323,6 @@ public class MainActivity extends Activity {
 				str = str.concat(date);
 	    	}
 	    	
-	    	mpgDataList.clear();
 	    	
 			bW.write(str);
 			bW.newLine();
