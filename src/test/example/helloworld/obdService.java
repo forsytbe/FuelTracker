@@ -10,6 +10,8 @@ import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 
 
+
+
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -17,11 +19,13 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.text.format.Time;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -39,7 +43,14 @@ public class obdService {
 	private int numSent = 0;
 	public static final int STATE_UNCONNECTED = 0;
 	public static final int STATE_CONNECTED = 1;
+	public static final int ENGINE_IDLE = 2;
+	public static final int NOT_IDLE = 3;
 	public int mState = 0;
+	
+	public final double sceondsPerHour = 3600.0;
+	public final double kmToMi = .621371;
+	public final double stoichRatio = 1.0/14.7;
+	public final double gramGasToGallon = 2650.0;
 	
 	public double vSpeed = 0; //vehicle speed in km/h
 	public double MAF = 0; //mass air flow, g/s
@@ -285,17 +296,33 @@ public class obdService {
 					byteOne = Integer.parseInt(tmpStr.substring(0, tmpStr.indexOf(" ")), 16);
 					byteTwo = Integer.parseInt(tmpStr.substring(tmpStr.indexOf(" ")+1), 16);
 					MAF = (((double)byteOne*256.0)+(double)byteTwo)/100.0;
-
-					MPG = (2757.142  *  .621371  *   vSpeed)
-							/(3600.0  *  MAF  *  (1/14.7));
-					DecimalFormat df = new DecimalFormat("#.###");
-					MPG = Double.valueOf(df.format(MPG));
-
-					tmpStr = "\r\rVehicle Speed: " + Double.toString(vSpeed) + "\rMass Air Flow: "
-							+ Double.toString(MAF) + "\rMiles per Gallon: " + Double.toString(MPG) + "\r\r";
-					bundle = new Bundle();
+					
+					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(parentContext);
+			    	boolean setIdle = prefs.getBoolean("gph_pref", true);
+			    	
+			    	bundle = new Bundle();
+			    	Message calcMessage = new Message();
+			    	if(setIdle){
+			    		if(vSpeed == 0.0){
+			    			MPG = gramGasToGallon/(3600.0  *  MAF  *  stoichRatio); // this is gallons per hour
+			    			calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, ENGINE_IDLE, -1);
+			    		}else{
+			    			MPG = (gramGasToGallon  *  kmToMi  *   vSpeed)
+									/(3600.0  *  MAF  *  stoichRatio);
+							DecimalFormat df = new DecimalFormat("#.##");
+							MPG = Double.valueOf(df.format(MPG));
+							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, NOT_IDLE, -1);
+			    		}
+			    	}else{
+		    			MPG = (gramGasToGallon  *  kmToMi  *   vSpeed)
+								/(3600.0  *  MAF  *  stoichRatio);
+						DecimalFormat df = new DecimalFormat("#.##");
+						MPG = Double.valueOf(df.format(MPG));
+						calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, NOT_IDLE, -1);
+			    	}
+					
 					bundle.putString("mpgData", Double.toString(MPG));
-					Message calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, -1, -1);
+				
 					calcMessage.setData(bundle);
 					calcMessage.sendToTarget();
 				}

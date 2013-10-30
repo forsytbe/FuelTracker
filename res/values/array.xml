@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+   
+<string-array name="unit_pref_title">
+    <item>Miles per Gallon (US)</item>
+    <item>Liters/100 Kilometers</item>
+    <item>Miles per Imperial Gallon</item>
+	
+
+</string-array>
+
+<string-array name="units">
+    <item>MPG</item>
+    <item>L/100km</item>
+    <item>MPG(Imp)</item>
+	
+</string-array>
+</resources>

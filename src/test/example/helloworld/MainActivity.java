@@ -34,6 +34,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.bluetooth.*;
+import com.devSyte.InfinityMPG.R;
 
 public class MainActivity extends Activity {
     public final static String EXTRA_MESSAGE = "test.example.helloworld.MESSAGE";
@@ -106,6 +107,7 @@ public class MainActivity extends Activity {
     	public void handleMessage(Message msg) {
 			Button startOrSave = (Button) findViewById(R.id.start_or_save);
     		Button findDev = (Button) findViewById(R.id.find_device);
+    		TextView unitDisp = (TextView) findViewById(R.id.unitDisp);
     		switch (msg.what) {
     		
     		case WRITE_PROMPT:
@@ -149,6 +151,7 @@ public class MainActivity extends Activity {
                     }
                 });
         		findDev.setVisibility(Button.GONE);
+        		unitDisp.setText("MPG");
         		break;
         		
     		case CONNECT_FAILURE:

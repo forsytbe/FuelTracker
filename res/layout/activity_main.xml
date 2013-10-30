@@ -5,25 +5,34 @@
     android:orientation="vertical" >
 
     <TextView
-        android:id="@+id/helloWorld"
+        android:id="@+id/hello"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="22dp"
-        android:text="@string/hello_world"
+        android:text="@string/app_name"
         android:textSize="36sp" />
 
     <TextView
         android:id="@+id/mainDisplay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/helloWorld"
+        android:layout_below="@+id/hello"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="63dp"
         
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textSize="72sp" />
+    
+        <TextView
+        android:id="@+id/unitDisp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/mainDisplay"
+        android:layout_toRightOf="@+id/mainDisplay"
+        android:textSize="56sp"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
 
     <Button
         android:id="@+id/find_device"
@@ -42,5 +51,7 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="95dp" />
+
+
 
 </RelativeLayout>

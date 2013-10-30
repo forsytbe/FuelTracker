@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import com.devSyte.InfinityMPG.R;
 
 public class SettingsFragment extends PreferenceFragment {
     @Override
@@ -18,20 +19,28 @@ public class SettingsFragment extends PreferenceFragment {
         // Load the preferences from an XML resource
 
         addPreferencesFromResource(R.xml.preferences);
-        Preference pref = (Preference) findPreference("bt_device");
-        String summary = pref.getSharedPreferences().getString("bt_device", "None");
+        
+
+        
+        Preference pref = (Preference) findPreference("units_pref");
+        String summary =pref.getSharedPreferences().getString("units_pref", getString(R.string.mpg));
         pref.setSummary(summary);
-        pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+        
+        Preference btpref = (Preference) findPreference("bt_device");
+        summary = btpref.getSharedPreferences().getString("bt_device", getString(R.string.default_none));
+        btpref.setSummary(summary);
+        
+        btpref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
           @Override
           public boolean onPreferenceClick(Preference preference) {
 
 
-        	startActivityForResult(preference.getIntent(), 0);
+        	startActivity(preference.getIntent());
             return true;
           }
         });
     }
-    @Override
+   /* @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data){
 		if (resultCode == Activity.RESULT_OK) {
 	        Preference pref = (Preference) findPreference("bt_device");
@@ -41,16 +50,23 @@ public class SettingsFragment extends PreferenceFragment {
 	        prefs.putString("bt_device", deviceData).apply();
 	        String summary =deviceData;
 	        pref.setSummary(summary);
+	        
 		}
     }
+    */
     
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+    /*public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+    	
+    	Preference pref = (Preference) findPreference(key);
         if (key.equals("bt_device")) {
-            Preference pref = (Preference) findPreference(key);
-	        String summary =pref.getSharedPreferences().getString("bt_device", "None");
+            
+	        String summary =pref.getSharedPreferences().getString(key, getString(R.string.default_none));
+	        pref.setSummary(summary);
+        }else if(key.equals("units_pref")){
+        	String summary =pref.getSharedPreferences().getString(key, getString(R.string.mpg));
 	        pref.setSummary(summary);
         }
-    }
+    }*/
     
 
     
