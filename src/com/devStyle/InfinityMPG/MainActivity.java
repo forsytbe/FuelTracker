@@ -1,4 +1,4 @@
-package test.example.helloworld;
+package com.devStyle.InfinityMPG;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -34,7 +34,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.bluetooth.*;
-import com.devSyte.InfinityMPG.R;
+import com.devStyle.InfinityMPG.R;
 
 public class MainActivity extends Activity {
     public final static String EXTRA_MESSAGE = "test.example.helloworld.MESSAGE";
@@ -186,7 +186,7 @@ public class MainActivity extends Activity {
             case R.id.action_settings:
                 // Display the fragment as the main content.
             	Intent intent = new Intent(this, SettingsActivity.class);
-            	startActivityForResult(intent, 1);
+            	startActivity(intent);
                 return true;
                 
             default:
