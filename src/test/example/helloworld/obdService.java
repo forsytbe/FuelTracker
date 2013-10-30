@@ -1,4 +1,4 @@
-package com.devStyle.InfinityMPG;
+package test.example.helloworld;
 
 import java.io.File;
 import java.io.FileNotFoundException;

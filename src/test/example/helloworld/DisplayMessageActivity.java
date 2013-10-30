@@ -1,4 +1,4 @@
-package com.devStyle.InfinityMPG;
+package test.example.helloworld;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,7 +37,7 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import com.devStyle.InfinityMPG.R;
+import com.devSyte.InfinityMPG.R;
 
 
 

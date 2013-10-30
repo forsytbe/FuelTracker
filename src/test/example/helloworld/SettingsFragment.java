@@ -1,4 +1,4 @@
-package com.devStyle.InfinityMPG;
+package test.example.helloworld;
 
 import android.app.Activity;
 import android.content.Context;
@@ -9,7 +9,7 @@ import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
-import com.devStyle.InfinityMPG.R;
+import com.devSyte.InfinityMPG.R;
 
 public class SettingsFragment extends PreferenceFragment {
     @Override
@@ -35,13 +35,25 @@ public class SettingsFragment extends PreferenceFragment {
           public boolean onPreferenceClick(Preference preference) {
 
 
-        	startActivityForResult(preference.getIntent(), 1);
+        	startActivity(preference.getIntent());
             return true;
           }
         });
     }
-
-   
+   /* @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data){
+		if (resultCode == Activity.RESULT_OK) {
+	        Preference pref = (Preference) findPreference("bt_device");
+			SharedPreferences.Editor prefs = pref.getSharedPreferences().edit();
+	        String deviceData = data.getExtras()
+	                .getString(DisplayMessageActivity.DEVICE_DATA);
+	        prefs.putString("bt_device", deviceData).apply();
+	        String summary =deviceData;
+	        pref.setSummary(summary);
+	        
+		}
+    }
+    */
     
     /*public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
     	
