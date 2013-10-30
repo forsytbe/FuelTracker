@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">InfinityMPG</string>
+    <string name="app_name">HelloWorld</string>
     <string name="edit_message">Enter a message</string>
     <string name="start">Start!</string>
     <string name="find_device">Find a Device...</string>
     <string name="action_settings">Settings</string>
-    <string name="hello_world">InfinityMPG</string>
+    <string name="hello_world">FuelEconomizer</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="title_activity_display_message">FindDeviceActivity</string>
     <string name="title_activity_settings">SettingsActivity</string>
@@ -17,7 +17,7 @@
 	<string name="setBut">Settings</string>
 	<string name="logBut">View/Start Log!</string>
 	<string name="gal">Gal</string>
-	<string name = "mpg">MPG</string>
+	<string name = "mpg">Mi/Gal</string>
 	<string name = "test">test</string>
 	<string name="bt_connect_fail">Connecing to Bluetooth Device Failed!</string>
 	<string name="bt_connect_success">Connected to Bluetooth Device!</string>
@@ -28,7 +28,4 @@
 	<string name ="saveBut">End and Save</string>
 	<string name = "obd2">OBD2 Connector</string>
 	<string name="default_none">None</string>
-	<string name="gph_pref_title">Enable Idling Mode</string>
-	<string name="gph_pref_summ">Enable to display Gallons (Liters) per hour when idling</string>
-	<string name="unitPrefs">Unit of Measurement</string>
 </resources>

@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.UUID;
+
 import android.os.Bundle;
 import android.os.Environment;
 import android.bluetooth.*;
@@ -37,7 +38,6 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import com.devSyte.InfinityMPG.R;
 
 
 

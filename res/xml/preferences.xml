@@ -4,25 +4,14 @@
                 android:title="@string/obd2"
 
             	android:key="bt_device"
-            	android:defaultValue="@string/default_none">
+            	android:defaultValue="@string/default_none"
+            	>
             	
                     
             		 <intent
             		 	android:action="android.intent.action.VIEW"
-             			android:targetPackage="com.devSyte.InfinityMPG"
-             			android:targetClass="com.devSyte.InfinityMPG.DisplayMessageActivity" /> 
+             			android:targetPackage="test.example.helloworld"
+             			android:targetClass="test.example.helloworld.DisplayMessageActivity" /> 
                	
             </Preference>
-            <ListPreference
-            android:key="units_pref"
-            android:title="@string/unitPrefs"
-            
-            android:defaultValue="MPG"
-            android:entries="@array/unit_pref_title" 
-            android:entryValues="@array/units"/>
-            
-            <CheckBoxPreference android:key="gph_pref"
-        		android:title="@string/gph_pref_title"
-       			android:summary="@string/gph_pref_summ"
-        		android:defaultValue="true" />
 </PreferenceScreen>
