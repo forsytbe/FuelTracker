@@ -64,28 +64,6 @@ public class SettingsFragment extends PreferenceFragment {
 		}
     }
 
-  /*
-    @Override
-    public void onResume(){
-        super.onResume();
-        PreferenceManager.getDefaultSharedPreferences(this.getActivity())
-                .registerOnSharedPreferenceChangeListener(listener);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        PreferenceManager.getDefaultSharedPreferences(this.getActivity())
-                .registerOnSharedPreferenceChangeListener(listener);
-    }
-    
-    @Override
-    public void onStop() {
-        super.onStop();
-        PreferenceManager.getDefaultSharedPreferences(this.getActivity())
-                .unregisterOnSharedPreferenceChangeListener(listener);
-    }
-*/
     
     @Override
     public void onDestroy() {

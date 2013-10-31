@@ -149,6 +149,12 @@ public class MainActivity extends Activity {
                     }
                 });
         		findDev.setVisibility(Button.GONE);
+        		
+        		TextView unitText = (TextView) findViewById(R.id.unitDisplay);
+        		
+        		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            	String unitOutput = prefs.getString("unit_pref", "Mi/Gal");
+            	unitText.setText(unitOutput);
         		break;
         		
     		case CONNECT_FAILURE:
