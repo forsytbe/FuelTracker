@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="unitsArr">        
+        <item>Mi/Gal (Default)</item>
+        <item>L/100km</item>
+        <item>Mi/Gal(UK)</item>
+        </string-array>
+     <string-array name="unitsStrVal">
+        <item>Mi/Gal</item>
+        <item>L/100km</item>
+        <item>Mi/Gal(UK)</item> 
+         
+         
+     </string-array>
+</resources>

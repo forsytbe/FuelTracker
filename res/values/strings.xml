@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+	
     <string name="app_name">HelloWorld</string>
+    <string name="idle_stats_title">Enable Idle Mode</string>
+    <string name="idle_stats_summ">Convert to Gal(L) per Hour while idling</string>
     <string name="edit_message">Enter a message</string>
     <string name="start">Start!</string>
     <string name="find_device">Find a Device...</string>
