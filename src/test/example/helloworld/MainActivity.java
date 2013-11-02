@@ -7,7 +7,10 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+
+
 
 
 import android.media.MediaScannerConnection;
@@ -43,6 +46,7 @@ public class MainActivity extends Activity {
 	
 	ArrayList<String> mpgDataList = new ArrayList<String>();
 	TextView mainText;
+	TextView subText;
 	
 	public static final int WRITE_SCREEN = 1;	        
 	public static final int WRITE_PROMPT = 2;
@@ -51,6 +55,13 @@ public class MainActivity extends Activity {
 	public static final int CONNECT_SUCCESS = 5;
 	public static final int CONNECT_FAILURE = 6;
 	
+	private double currDisplayData = 0.0;
+	private double currSubDispData = 0.0;
+	private double currMPG = 0.0;
+	private long numDataPts = 0L;
+	
+	private double runningMpgAvg = 0.0;
+	
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,10 +69,14 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
-
+        SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        runningMpgAvg = prefs.getFloat("avgMpg", 0.0f);
+        numDataPts = prefs.getLong("numPtsForAvg", 0l);
+        
         
         cmdPrompt = new ArrayAdapter<String>(this, android.R.layout.list_content);
         mainText = (TextView) findViewById(R.id.mainDisplay);
+        subText = (TextView) findViewById(R.id.subDisplay);
         
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		if(mBluetoothAdapter == null){
@@ -100,12 +115,15 @@ public class MainActivity extends Activity {
     	}
     }
 
-    //currently the handler isn't too helpful, and is used only to log the retrieved data
+    //Here the preferences are implemented, the data conversions done, and the screen is written
     Handler mHandler = new Handler(){
     	@Override
     	public void handleMessage(Message msg) {
 			Button startOrSave = (Button) findViewById(R.id.start_or_save);
     		Button findDev = (Button) findViewById(R.id.find_device);
+    		
+    		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+    		String unitOutput = ""; 
     		switch (msg.what) {
     		
     		case WRITE_PROMPT:
@@ -131,12 +149,113 @@ public class MainActivity extends Activity {
     			now.setToNow();
     			String curTime = Integer.toString(now.hour) + ":" + Integer.toString(now.minute) + ":" +Integer.toString(now.second);
     			
-    			mpgDataList.add("\t" + curTime+ "> " + msg.getData().getString("mpgData") + "\r");
+    			DecimalFormat df = new DecimalFormat("#.##");
+    			unitOutput = prefs.getString("units_pref", "Mpg");
+    			
+    			
+    			currMPG = msg.getData().getDouble("mpgData");
+    			++numDataPts;
+    			currDisplayData = currMPG;
+    			//currMPG is what is written to the file.  The file is ALWAYS stored as MPG, regardless of user preference
+    			//When data analysis is available, it will be converted to user spec'd  units.
+
+    			//runningavg will store the *total* number of data points for the file and the avg associated with them
+    			//every iteration we just add the new point to the set
+    	
+    			//Case 0 is standard, engine running displaying mpg.  1 is engine idling, 2 engine is off (mpg = 0)
+
+    			switch(msg.arg1){
+
+	    			case 0:
+	        			currMPG *= obdService.kmToMi/((obdService.stoichRatio*3600)/obdService.gramGasToGal);
+	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
+	        			
+	        			if(unitOutput.equals("Mpg")){
+	        				//this will convert km/h to mi/h
+	       				 	//this converts a gram of gas/second to gallon/hour
+	        				currDisplayData = currMPG;
+		        			currSubDispData = runningMpgAvg;
+
+		       			}else if(unitOutput.equals("L/100km")){
+		       				//this yields kmPerHour/gramsGasPerHour == km/gramGas
+		       				currDisplayData *= 100.0/((obdService.stoichRatio*3600.0)/obdService.gramGasToLiter); // now 100km/literGas
+		       				currDisplayData = 1.0/currDisplayData; //Liter/100km
+		       				
+		       				
+		    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
+		        			currSubDispData = 1.0/currSubDispData;
+		       			}else if(unitOutput.equals("Mpg(UK)")){
+		       				currDisplayData *=(obdService.kmToMi)/ ((3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal);
+		       				
+		       				currSubDispData = runningMpgAvg * (1.0/obdService.galGasToImpGal);
+		       			}
+	        			
+	        			break;
+	    			case 1:
+	        			currMPG = 0.0;
+	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
+	        			
+	    				if(prefs.getBoolean("idle_stats_pref", true)){
+		        			if(unitOutput.equals("Mpg")){
+		        				
+		       				 	//this converts a gram of air/second (the MAF stored in currMPG) to gallon/hour
+		        				currDisplayData = (currDisplayData * ( 3600.0* obdService.stoichRatio))/obdService.gramGasToGal;
+		        				unitOutput = "G/Hr";
+		        				
+			        			currSubDispData = runningMpgAvg;
+
+			       			}else if(unitOutput.equals("L/100km")){
+			       				currDisplayData = (currDisplayData *obdService.stoichRatio*3600.0)/obdService.gramGasToLiter;//liter/hour
+			       				unitOutput = "L/Hr";
+	
+			    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
+			        			currSubDispData = 1.0/currSubDispData;
+			       			}else if(unitOutput.equals("Mpg(UK)")){
+			       				currDisplayData =(currDisplayData* 3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal ;
+			       				unitOutput = "G(UK)/Hr";
+			       			}
+	    				}else{
+	    					currDisplayData = 0.0;
+		       				currSubDispData = runningMpgAvg * (1.0/obdService.galGasToImpGal);
+
+	    				}
+
+
+	    				currMPG = 0.0;
+	    				
+	        			break;
+	    			case 2:
+	    				currMPG = msg.getData().getDouble("mpgData");
+	    				
+	    				currDisplayData = currMPG;
+	        			currSubDispData = runningMpgAvg;
+
+	    				unitOutput = "";
+	        			break;
+
+    			}
+    			
+       			
+    			
+
+    			SharedPreferences.Editor prefEdit = prefs.edit();
+    			prefEdit.putLong("numPtsForAvg", numDataPts);
+    			prefEdit.putFloat("avgMPG", (float)runningMpgAvg);
+    			currMPG = Double.valueOf(df.format(currMPG));
+    			currDisplayData = Double.valueOf(df.format(currDisplayData));
+    			currSubDispData = Double.valueOf(df.format(currSubDispData));
+    			
+    			mpgDataList.add("\t" + curTime+ "> " + Double.toString(currMPG) + "\r");
     			if(mpgDataList.size() >=128){
     				writeMpgData(false);
     			}
-    			
-    			mainText.setText(msg.getData().getString("mpgData"));
+				
+            	
+        		TextView unitText = (TextView) findViewById(R.id.unitDisplay);
+
+            	
+    			mainText.setText(Double.toString(currDisplayData) + unitOutput);
+    			subText.setText("Avg for this trip: " + Double.toString(currSubDispData)+prefs.getString("units_pref", "Mpg"));
     			break;
     			
     		case CONNECT_SUCCESS:
@@ -150,11 +269,8 @@ public class MainActivity extends Activity {
                 });
         		findDev.setVisibility(Button.GONE);
         		
-        		TextView unitText = (TextView) findViewById(R.id.unitDisplay);
         		
-        		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            	String unitOutput = prefs.getString("unit_pref", "Mi/Gal");
-            	unitText.setText(unitOutput);
+
         		break;
         		
     		case CONNECT_FAILURE:
@@ -267,6 +383,10 @@ public class MainActivity extends Activity {
     }
   
 	public void endAndSave(){
+		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+		SharedPreferences.Editor prefEdit = prefs.edit();
+		prefEdit.putLong("numPtsForAvg", numDataPts);
+		prefEdit.putFloat("avgMPG", (float)runningMpgAvg);
 		if(mobdService.isConnected()){
 			mobdService.stop();
 	

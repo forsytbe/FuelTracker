@@ -20,6 +20,7 @@ public class SettingsFragment extends PreferenceFragment {
 			        pref.setSummary(summary);
 		        }else if(key.equals("units_pref")){
 		        	 Preference pref = (Preference) findPreference(key);
+		        	 
 				        String summary =pref.getSharedPreferences().getString("units_pref", "None");
 				        pref.setSummary(summary);
 		        }

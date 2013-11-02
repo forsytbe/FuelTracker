@@ -45,6 +45,16 @@ public class obdService {
 	public double MAF = 0; //mass air flow, g/s
 	public double MPG = 0; //miles/gallon
 	
+	public static final double  gramGasToGal = 2835.0;
+	public static final double gramGasToImpGal = 3410.0;
+	public static final double gramGasToLiter = 750.0;
+	public static final double literGasToGal = 0.264172;
+	public static final double galGasToImpGal = 0.832674;
+	public static final double kmToMi = .621371;
+	public static final double miToKm = 1.60934;
+	public static final double stoichRatio = (1.0/14.7);
+	
+	
 
 	
 
@@ -228,6 +238,9 @@ public class obdService {
 				
 			}
 			mState = 0;
+			Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, -1, -1);
+
+			message.sendToTarget();
 			cancel();
 		}
 		
@@ -285,17 +298,30 @@ public class obdService {
 					byteOne = Integer.parseInt(tmpStr.substring(0, tmpStr.indexOf(" ")), 16);
 					byteTwo = Integer.parseInt(tmpStr.substring(tmpStr.indexOf(" ")+1), 16);
 					MAF = (((double)byteOne*256.0)+(double)byteTwo)/100.0;
+					
+					DecimalFormat df = new DecimalFormat("#.##");
 
-					MPG = (2757.142  *  .621371  *   vSpeed)
-							/(3600.0  *  MAF  *  (1/14.7));
-					DecimalFormat df = new DecimalFormat("#.###");
-					MPG = Double.valueOf(df.format(MPG));
-
-					tmpStr = "\r\rVehicle Speed: " + Double.toString(vSpeed) + "\rMass Air Flow: "
-							+ Double.toString(MAF) + "\rMiles per Gallon: " + Double.toString(MPG) + "\r\r";
+					
 					bundle = new Bundle();
-					bundle.putString("mpgData", Double.toString(MPG));
-					Message calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, -1, -1);
+					Message calcMessage = new Message();
+		
+						if(Double.valueOf(df.format(vSpeed)) == 0.00){
+							
+							MPG = MAF; //gallons per hour, MAF is in gram/second
+								
+							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 1, -1);
+	
+						}else{
+							//miles pergallon, vspeed is in km/hr, MAF is in grams/seconds
+							MPG = (vSpeed)/(MAF);
+							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 0, -1);
+							
+						}
+			
+
+					bundle.putDouble("mpgData", MPG);
+
+
 					calcMessage.setData(bundle);
 					calcMessage.sendToTarget();
 				}

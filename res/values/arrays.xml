@@ -6,9 +6,9 @@
         <item>Mi/Gal(UK)</item>
         </string-array>
      <string-array name="unitsStrVal">
-        <item>Mi/Gal</item>
+        <item>Mpg</item>
         <item>L/100km</item>
-        <item>Mi/Gal(UK)</item> 
+        <item>Mpg(UK)</item> 
          
          
      </string-array>

@@ -13,13 +13,15 @@
         android:layout_marginTop="22dp"
         android:text="@string/app_name"
         android:textSize="36sp" />
+    
 	<TextView
         android:id="@+id/unitDisplay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/mainDisplay"
         android:layout_alignParentRight="true"
-         android:textSize="55sp"
+        android:textSize="55sp"
+        
         android:textAppearance="?android:attr/textAppearanceLarge" />
     
     <TextView
@@ -51,7 +53,15 @@
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="95dp" />
 
-   
-
+    <TextView
+        android:id="@+id/subDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/mainDisplay"
+        android:layout_alignLeft="@+id/mainDisplay"
+        android:layout_marginBottom="25dp"
+        android:layout_marginRight ="10dp"
+        
+        android:textAppearance="?android:attr/textAppearanceLarge" />
 
 </RelativeLayout>

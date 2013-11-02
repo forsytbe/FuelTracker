@@ -27,5 +27,5 @@
                 android:key="units_pref" 
                 android:entryValues="@array/unitsStrVal" 
                  
-                android:defaultValue="Mi/Gal" />
+                android:defaultValue="Mpg" />
 </PreferenceScreen>
