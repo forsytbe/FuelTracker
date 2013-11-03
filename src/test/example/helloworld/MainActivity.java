@@ -13,6 +13,9 @@ import java.util.ArrayList;
 
 
 
+
+import java.util.Hashtable;
+
 import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
@@ -31,6 +34,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences.Editor;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -47,6 +51,8 @@ public class MainActivity extends Activity {
 	ArrayList<String> mpgDataList = new ArrayList<String>();
 	TextView mainText;
 	TextView subText;
+	TextView appText;
+	TextView unitText;
 	
 	public static final int WRITE_SCREEN = 1;	        
 	public static final int WRITE_PROMPT = 2;
@@ -62,6 +68,9 @@ public class MainActivity extends Activity {
 	
 	private double runningMpgAvg = 0.0;
 	
+	//this is used to import the typeface, taken from donnfelker at androind-bootstrap
+    private static final String TAG = "Typefaces";
+    private static final Hashtable<String, Typeface> cache = new Hashtable<String, Typeface>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,8 +84,20 @@ public class MainActivity extends Activity {
         
         
         cmdPrompt = new ArrayAdapter<String>(this, android.R.layout.list_content);
+        appText = (TextView) findViewById(R.id.appName);
         mainText = (TextView) findViewById(R.id.mainDisplay);
         subText = (TextView) findViewById(R.id.subDisplay);
+        unitText = (TextView) findViewById(R.id.unitDisplay);
+        
+        //setTF(this, "font/fedserviceextrabold.TFF", mainText);
+        Typeface typeFace = Typeface.createFromAsset(getApplicationContext().getAssets(), "font/Magenta_BBT.ttf");
+        appText.setTypeface(typeFace);
+        typeFace = Typeface.createFromAsset(getApplicationContext().getAssets(), "font/orbitron-black.otf");
+        mainText.setTypeface(typeFace);
+        subText.setTypeface(typeFace);
+        typeFace = Typeface.createFromAsset(getApplicationContext().getAssets(), "font/orbitron-bold.otf");
+        unitText.setTypeface(typeFace);
+
         
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		if(mBluetoothAdapter == null){
@@ -90,8 +111,20 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart(){
     	super.onStart();
-    	Button findDev = (Button) findViewById(R.id.find_device);
+    	
+    	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+    	Button contTrip = (Button) findViewById(R.id.continue_trip);
     	Button startOrSave = (Button) findViewById(R.id.start_or_save);
+    	
+    	if(prefs.getLong("numPtsForAvg", 0l)==0l){
+    		contTrip.setVisibility(Button.GONE);
+
+    	}else{
+    		contTrip.setVisibility(Button.VISIBLE);
+
+    	}
+		contTrip.setVisibility(Button.VISIBLE);
+
     	if(!mobdService.isConnected()){
     		startOrSave.setText(R.string.start);
     		startOrSave.setOnClickListener(new View.OnClickListener() {
@@ -102,7 +135,6 @@ public class MainActivity extends Activity {
 
                 }
             });
-    		findDev.setVisibility(Button.VISIBLE);
     	}else{
     		startOrSave.setText(R.string.saveBut);
     		startOrSave.setOnClickListener(new View.OnClickListener() {
@@ -111,7 +143,6 @@ public class MainActivity extends Activity {
                 	endAndSave();
                 }
             });
-    		findDev.setVisibility(Button.GONE);
     	}
     }
 
@@ -120,7 +151,7 @@ public class MainActivity extends Activity {
     	@Override
     	public void handleMessage(Message msg) {
 			Button startOrSave = (Button) findViewById(R.id.start_or_save);
-    		Button findDev = (Button) findViewById(R.id.find_device);
+    		Button contTrip= (Button) findViewById(R.id.continue_trip);
     		
     		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
     		String unitOutput = ""; 
@@ -149,8 +180,8 @@ public class MainActivity extends Activity {
     			now.setToNow();
     			String curTime = Integer.toString(now.hour) + ":" + Integer.toString(now.minute) + ":" +Integer.toString(now.second);
     			
-    			DecimalFormat df = new DecimalFormat("#.##");
-    			unitOutput = prefs.getString("units_pref", "Mpg");
+    			DecimalFormat df = new DecimalFormat("#.00");
+    			unitOutput = prefs.getString("units_pref", "MPG");
     			
     			
     			currMPG = msg.getData().getDouble("mpgData");
@@ -170,13 +201,13 @@ public class MainActivity extends Activity {
 	        			currMPG *= obdService.kmToMi/((obdService.stoichRatio*3600)/obdService.gramGasToGal);
 	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
 	        			
-	        			if(unitOutput.equals("Mpg")){
+	        			if(unitOutput.equals("MPG")){
 	        				//this will convert km/h to mi/h
 	       				 	//this converts a gram of gas/second to gallon/hour
 	        				currDisplayData = currMPG;
 		        			currSubDispData = runningMpgAvg;
 
-		       			}else if(unitOutput.equals("L/100km")){
+		       			}else if(unitOutput.equals("L/100KM")){
 		       				//this yields kmPerHour/gramsGasPerHour == km/gramGas
 		       				currDisplayData *= 100.0/((obdService.stoichRatio*3600.0)/obdService.gramGasToLiter); // now 100km/literGas
 		       				currDisplayData = 1.0/currDisplayData; //Liter/100km
@@ -184,7 +215,7 @@ public class MainActivity extends Activity {
 		       				
 		    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
 		        			currSubDispData = 1.0/currSubDispData;
-		       			}else if(unitOutput.equals("Mpg(UK)")){
+		       			}else if(unitOutput.equals("MPG(UK)")){
 		       				currDisplayData *=(obdService.kmToMi)/ ((3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal);
 		       				
 		       				currSubDispData = runningMpgAvg * (1.0/obdService.galGasToImpGal);
@@ -196,23 +227,23 @@ public class MainActivity extends Activity {
 	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
 	        			
 	    				if(prefs.getBoolean("idle_stats_pref", true)){
-		        			if(unitOutput.equals("Mpg")){
+		        			if(unitOutput.equals("MPG")){
 		        				
 		       				 	//this converts a gram of air/second (the MAF stored in currMPG) to gallon/hour
 		        				currDisplayData = (currDisplayData * ( 3600.0* obdService.stoichRatio))/obdService.gramGasToGal;
-		        				unitOutput = "G/Hr";
+		        				unitOutput = "G/HR";
 		        				
 			        			currSubDispData = runningMpgAvg;
 
 			       			}else if(unitOutput.equals("L/100km")){
 			       				currDisplayData = (currDisplayData *obdService.stoichRatio*3600.0)/obdService.gramGasToLiter;//liter/hour
-			       				unitOutput = "L/Hr";
+			       				unitOutput = "L/HR";
 	
 			    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
 			        			currSubDispData = 1.0/currSubDispData;
 			       			}else if(unitOutput.equals("Mpg(UK)")){
 			       				currDisplayData =(currDisplayData* 3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal ;
-			       				unitOutput = "G(UK)/Hr";
+			       				unitOutput = "G(UK)/HR";
 			       			}
 	    				}else{
 	    					currDisplayData = 0.0;
@@ -238,9 +269,7 @@ public class MainActivity extends Activity {
        			
     			
 
-    			SharedPreferences.Editor prefEdit = prefs.edit();
-    			prefEdit.putLong("numPtsForAvg", numDataPts);
-    			prefEdit.putFloat("avgMPG", (float)runningMpgAvg);
+
     			currMPG = Double.valueOf(df.format(currMPG));
     			currDisplayData = Double.valueOf(df.format(currDisplayData));
     			currSubDispData = Double.valueOf(df.format(currSubDispData));
@@ -251,11 +280,12 @@ public class MainActivity extends Activity {
     			}
 				
             	
-        		TextView unitText = (TextView) findViewById(R.id.unitDisplay);
+        	
 
             	
     			mainText.setText(Double.toString(currDisplayData) + unitOutput);
-    			subText.setText("Avg for this trip: " + Double.toString(currSubDispData)+prefs.getString("units_pref", "Mpg"));
+    			subText.setText("AVG "+ prefs.getString("units_pref", "MPG") + ": " + Double.toString(currSubDispData));
+    			unitText.setText(prefs.getString("units_pref", "MPG"));
     			break;
     			
     		case CONNECT_SUCCESS:
@@ -267,14 +297,23 @@ public class MainActivity extends Activity {
                     	endAndSave();
                     }
                 });
-        		findDev.setVisibility(Button.GONE);
+        		contTrip.setVisibility(Button.GONE);
         		
         		
 
         		break;
         		
     		case CONNECT_FAILURE:
-
+    			//case 0 = the connection never happened, case 1 is a disconnect
+    			switch(msg.arg1){
+    			case 0:
+    				final String errMess = "Device not available.  Please find a device.";
+    				final String title = "Connection Failed";
+    				connectExceptAlert(title, errMess);
+    				break;
+    			case 1:
+    				break;
+    			}
         		startOrSave.setText(R.string.start);
         		startOrSave.setOnClickListener(new View.OnClickListener() {
         			@Override
@@ -284,7 +323,7 @@ public class MainActivity extends Activity {
 
                     }
                 });
-        		findDev.setVisibility(Button.VISIBLE);
+        		endAndSave();
         		break;
     		}
     	}	
@@ -316,27 +355,32 @@ public class MainActivity extends Activity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-  
-    	if (resultCode == Activity.RESULT_OK) {
-    		
-			SharedPreferences.Editor prefs = PreferenceManager.getDefaultSharedPreferences(this).edit();
-	        String deviceData = data.getExtras()
-	                .getString(DisplayMessageActivity.DEVICE_DATA);
-	        prefs.putString("bt_device", deviceData).apply();
-	        
-		}
+    	switch(requestCode){
+    	
+    	case 0:
+	    	if (resultCode == Activity.RESULT_OK) {
+	    		
+				SharedPreferences.Editor prefs = PreferenceManager.getDefaultSharedPreferences(this).edit();
+		        String deviceData = data.getExtras()
+		                .getString(DisplayMessageActivity.DEVICE_DATA);
+		        prefs.putString("bt_device", deviceData).apply();
+		        
+			}
+    	}
 	    		
     		
     }
 
-    private void connectDevice(String deviceData) {
+    private void connectDevice(String deviceData){
         // Get the device MAC address
 
     	String address = deviceData.substring(deviceData.indexOf('\n')+1);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
+        
         mobdService.connect(device);
+        
 
         
         
@@ -364,6 +408,13 @@ public class MainActivity extends Activity {
 		super.onStop();
     }
     
+    public void continueTrip(){
+    	SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+    	numDataPts = pref.getLong("numPtsForAvg", 0l);
+    	runningMpgAvg = pref.getFloat("avgMPG", 0.0f);
+    	startService();
+    }
+    
 	public void startService(){
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     	
@@ -375,21 +426,30 @@ public class MainActivity extends Activity {
     
     		startActivityForResult(intent, 0); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
     	}else{
-    		
+
     		connectDevice(deviceName);
+
 
 
     	}
     }
   
 	public void endAndSave(){
+
+		Button startOrSave = (Button) findViewById(R.id.start_or_save);
+		Button contTrip = (Button) findViewById(R.id.continue_trip);
+		
 		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		SharedPreferences.Editor prefEdit = prefs.edit();
-		prefEdit.putLong("numPtsForAvg", numDataPts);
-		prefEdit.putFloat("avgMPG", (float)runningMpgAvg);
-		if(mobdService.isConnected()){
+		
+		if(numDataPts > 0l){
 			mobdService.stop();
-	
+
+			prefEdit.putLong("numPtsForAvg", numDataPts);
+			prefEdit.putFloat("avgMPG", (float)runningMpgAvg);
+
+			contTrip.setVisibility(Button.VISIBLE);
+
 			writeCommsToFile();
 			writeMpgData(true);
 			File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
@@ -398,9 +458,11 @@ public class MainActivity extends Activity {
 	
 			      }
 			 });
+		}else{
+			contTrip.setVisibility(Button.GONE);
+
 		}
-		Button startOrSave = (Button) findViewById(R.id.start_or_save);
-		Button findDev = (Button) findViewById(R.id.find_device);
+
 		startOrSave.setText(R.string.start);
 		startOrSave.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -410,7 +472,6 @@ public class MainActivity extends Activity {
 
             }
         });
-		findDev.setVisibility(Button.VISIBLE);
 		 
 	}
 	
@@ -476,6 +537,32 @@ public class MainActivity extends Activity {
 
     }
     
+    
+
+     public static Typeface getTypeFace(Context c, String assetPath) {
+    	         synchronized (cache) {
+    	             if (!cache.containsKey(assetPath)) {
+    	                 try {
+    	                     Typeface t = Typeface.createFromAsset(c.getAssets(),
+    	                             assetPath);
+    	                     cache.put(assetPath, t);
+    	                 } catch (Exception e) {
+
+    	                     return null;
+    	                 }
+    	            }
+    	             return cache.get(assetPath);
+    	         }
+     }
+    	  
+    	 
+    private void setTF(Context context, String fontFile , TextView tv) {
+    	         Typeface tf = getTypeFace(context, fontFile);
+    	         tv.setTypeface( tf );
+   }
+    	  
+
+    
 	public void AlertBox( String title, String message ){
 	    new AlertDialog.Builder(this)
 	    .setTitle( title )
@@ -486,5 +573,23 @@ public class MainActivity extends Activity {
 	        }
 	    }).show();
 	  }
+	
+	public void connectExceptAlert(String title, String message){
+	    new AlertDialog.Builder(this)
+	    .setTitle( title )
+	    .setMessage( message )
+	    .setPositiveButton("Find Device", new OnClickListener() {
+	        public void onClick(DialogInterface arg0, int arg1) {
+	    		Intent intent = new Intent(getApplicationContext(), DisplayMessageActivity.class);
+	    	    
+	    		startActivityForResult(intent, 0);
+	        }
+	    })
+	    .setNegativeButton("Cancel", new OnClickListener() {
+	        public void onClick(DialogInterface arg0, int arg1) {
+	   
+	        }
+	    }).show();
+	}
     
 }

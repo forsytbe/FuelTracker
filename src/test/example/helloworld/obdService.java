@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 
 
+
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -127,15 +128,8 @@ public class obdService {
 				
 			}catch(IOException connectException){
 		
-				final String errMess = "Device not available.  Please find a device.";
-				
-				mHandler.post(new Runnable(){
-					@Override
-					public void run(){
-						AlertBox("Bluetooth device not available", errMess);
-					}
-				});
-				Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, -1, -1);
+    			
+				Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, 0, -1);
 
 				message.sendToTarget();
 				
@@ -197,10 +191,11 @@ public class obdService {
 			
 			//first message we want to resest device, turn off echo, try to set protocal to Iso 9141
 			//isConnected is API 14 or greater
+			Message message = new Message();
 			if(mmSocket.isConnected()){
 
 				
-				Message message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
+				message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
 				
 				Bundle bundle = new Bundle();
 				bundle.putBoolean("writeTime",true);
@@ -238,7 +233,7 @@ public class obdService {
 				
 			}
 			mState = 0;
-			Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, -1, -1);
+			message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, 1, -1);
 
 			message.sendToTarget();
 			cancel();

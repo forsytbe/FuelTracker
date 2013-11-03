@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	
-    <string name="app_name">HelloWorld</string>
+    <string name="app_name">InfinityMPG</string>
     <string name="idle_stats_title">Enable Idle Mode</string>
     <string name="idle_stats_summ">Convert to Gal(L) per Hour while idling</string>
     <string name="edit_message">Enter a message</string>
-    <string name="start">Start!</string>
+    <string name="start">New Trip</string>
+    <string name ="contButt">Continue Trip</string>
     <string name="find_device">Find a Device...</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">FuelEconomizer</string>
@@ -19,13 +20,13 @@
 	<string name="setBut">Settings</string>
 	<string name="logBut">View/Start Log!</string>
 	<string name="gal">Gal</string>
-	<string name = "mpg">Mpg</string>
+	<string name = "mpg">MPG</string>
 	<string name = "test">test</string>
 	<string name="bt_connect_fail">Connecing to Bluetooth Device Failed!</string>
 	<string name="bt_connect_success">Connected to Bluetooth Device!</string>
 	<string name="ok">OK</string>
 	<string name="cancel">Cancel</string>
-	<string name="no_devices">No bondwed devices.  Please pair a device.</string>
+	<string name="no_devices">No bonded devices.  Please pair a device.</string>
 	<string name="pairBut">Pair others...</string>
 	<string name ="saveBut">End and Save</string>
 	<string name = "obd2">OBD2 Connector</string>
