@@ -9,7 +9,7 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 
-public class SettingsActivity extends PreferenceActivity {
+public class Settings extends PreferenceActivity {
 	
 
     @Override

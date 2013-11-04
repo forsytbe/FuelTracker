@@ -31,21 +31,24 @@ public final class R {
         public static final int button_focused=0x7f020003;
         public static final int button_pressed=0x7f020004;
         public static final int ic_launcher=0x7f020005;
+        public static final int infinity=0x7f020006;
     }
     public static final class id {
-        public static final int action_settings=0x7f0a0008;
+        public static final int action_settings=0x7f0a0009;
         public static final int appName=0x7f0a0002;
         public static final int btDevList=0x7f0a0001;
         public static final int btStatus=0x7f0a0000;
-        public static final int continue_trip=0x7f0a0005;
+        public static final int continue_trip=0x7f0a0006;
+        public static final int loadingContent=0x7f0a0004;
         public static final int mainDisplay=0x7f0a0003;
-        public static final int start_or_save=0x7f0a0004;
-        public static final int subDisplay=0x7f0a0007;
-        public static final int unitDisplay=0x7f0a0006;
+        public static final int start_or_save=0x7f0a0005;
+        public static final int subDisplay=0x7f0a0008;
+        public static final int unitDisplay=0x7f0a0007;
     }
     public static final class layout {
         public static final int activity_display_message=0x7f030000;
         public static final int activity_main=0x7f030001;
+        public static final int custom_list_item_1=0x7f030002;
     }
     public static final class menu {
         public static final int display_message=0x7f090000;
@@ -59,7 +62,8 @@ public final class R {
         public static final int cancel=0x7f070018;
         public static final int contButt=0x7f070005;
         public static final int curConsump=0x7f07000d;
-        public static final int default_none=0x7f07001d;
+        public static final int default_none=0x7f07001e;
+        public static final int dispAvg=0x7f07001d;
         public static final int edit_message=0x7f070003;
         public static final int find_device=0x7f070006;
         public static final int gal=0x7f070012;
@@ -110,6 +114,7 @@ public final class R {
  All customizations that are NOT specific to a particular API-level can go here. 
          */
         public static final int AppTheme=0x7f080001;
+        public static final int PreferencesTheme=0x7f080003;
         public static final int cust_button=0x7f080002;
     }
     public static final class xml {

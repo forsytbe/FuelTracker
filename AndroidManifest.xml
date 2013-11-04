@@ -38,8 +38,9 @@
                 android:value="test.example.helloworld.MainActivity" />
         </activity>
         <activity
-            android:name="test.example.helloworld.SettingsActivity"
+            android:name="test.example.helloworld.Settings"
             android:label="@string/title_activity_settings"
+            android:theme="@style/PreferencesTheme">
             android:parentActivityName="test.example.helloworld.MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
