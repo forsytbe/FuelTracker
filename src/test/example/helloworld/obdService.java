@@ -12,6 +12,7 @@ import java.text.DecimalFormat;
 
 
 
+
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -310,13 +311,14 @@ public class obdService {
 		
 						if(Double.valueOf(df.format(vSpeed)) == 0.00){
 							
-							MPG = MAF; //gallons per hour, MAF is in gram/second
+							MPG = (MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal; //gallons per hour, MAF is in gram/second
 								
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 1, -1);
 	
 						}else{
 							//miles pergallon, vspeed is in km/hr, MAF is in grams/seconds
-							MPG = (vSpeed)/(MAF);
+							MPG = (vSpeed*obdService.kmToMi)/((MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal);
+
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 0, -1);
 							
 						}

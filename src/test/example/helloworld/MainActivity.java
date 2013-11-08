@@ -200,7 +200,7 @@ public class MainActivity extends Activity {
     			unitOutput = prefs.getString("units_pref", "MPG");
     			
     			
-    			currMPG = msg.getData().getDouble("mpgData");
+    			currMPG = msg.getData().getDouble("mpgData");//this comes back as MPG regardless of user preference
     			++numDataPts;
     			currDisplayData = currMPG;
     			//currMPG is what is written to the file.  The file is ALWAYS stored as MPG, regardless of user preference
@@ -214,7 +214,6 @@ public class MainActivity extends Activity {
     			switch(msg.arg1){
 
 	    			case 0:
-	        			currMPG *= obdService.kmToMi/((obdService.stoichRatio*3600)/obdService.gramGasToGal);
 	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
 	        			
 	        			if(unitOutput.equals("MPG")){
@@ -224,63 +223,47 @@ public class MainActivity extends Activity {
 		        			currSubDispData = runningMpgAvg;
 
 		       			}else if(unitOutput.equals("L/100KM")){
-		       				//this yields kmPerHour/gramsGasPerHour == km/gramGas
-		       				currDisplayData *= 100.0/(obdService.stoichRatio*3600.0);
-		       				currDisplayData /= obdService.gramGasToLiter; // now 100km/literGas
-		       				currDisplayData = 1.0/currDisplayData; //Liter/100km
+
+		       				currDisplayData = 235.2/currMPG;
 		       				
-		       				
-		    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
-		        			currSubDispData = 1.0/currSubDispData;
+		    				currSubDispData = 235.2/runningMpgAvg;
 		       			}else if(unitOutput.equals("MPG(UK)")){
-		       				currDisplayData *=(obdService.kmToMi)/ ((3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal);
+		       				currDisplayData =currMPG*1.201;
 		       				
-		       				currSubDispData = runningMpgAvg * (1.0/obdService.galGasToImpGal);
+		       				currSubDispData = runningMpgAvg * 1.201;
 		       			}
 	        			
 	        			break;
 	    			case 1:
-	        			currMPG = 0.0;
-	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
-	        			
+	    				
+	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + 0.0)/((double)numDataPts);//0.0 because thats the mpg youre getting
 	        			if(unitOutput.equals("MPG")){
-	        				
-	       				 	//this converts a gram of air/second (the MAF stored in currMPG) to gallon/hour
-	        				currDisplayData = (currDisplayData * ( 3600.0* obdService.stoichRatio))/obdService.gramGasToGal;
+	        				//currMPG is coming back as gal/hour for case1
+	        				currDisplayData = currMPG;
 	        				unitOutput = "G/HR";
 	        				
 		        			currSubDispData = runningMpgAvg;
 
 		       			}else if(unitOutput.equals("L/100km")){
-		       				currDisplayData = (currDisplayData *obdService.stoichRatio*3600.0)/obdService.gramGasToLiter;//liter/hour
+		       				currDisplayData = currMPG*3.7854;
 		       				unitOutput = "L/HR";
 
-		    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
-		        			currSubDispData = 1.0/currSubDispData;
+		    				currSubDispData = 235.2/runningMpgAvg;
 		       			}else if(unitOutput.equals("Mpg(UK)")){
-		       				currDisplayData =(currDisplayData* 3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal ;
+		       				currDisplayData = currMPG*0.83267;
 		       				unitOutput = "G(UK)/HR";
-		       				currSubDispData = runningMpgAvg * (1.0/obdService.galGasToImpGal);
+		       				currSubDispData = runningMpgAvg * 1.201;
 
 		       			}
 	        			
-	        			if(!prefs.getBoolean("idle_stats_pref", true)){
+		        		if(!prefs.getBoolean("idle_stats_pref", true)){
+
 	    					currDisplayData = 0.0;
 	    					unitOutput = prefs.getString("units_pref", "MPG");
 	    				}
 
-
-	    				currMPG = 0.0;
-	    				
 	        			break;
-	    			case 2:
-	    				currMPG = msg.getData().getDouble("mpgData");
-	    				
-	    				currDisplayData = currMPG;
-	        			currSubDispData = runningMpgAvg;
 
-	    				unitOutput = "";
-	        			break;
 
     			}
     			
