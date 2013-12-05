@@ -71,7 +71,10 @@ public class MainActivity extends Activity {
 	private double currMPG = 0.0;
 	private long numDataPts = 0L;
 	
+	private Time start = null;
+	
 	private double runningMpgAvg = 0.0;
+	private boolean startTSet = false;
 
 
     @Override
@@ -130,8 +133,36 @@ public class MainActivity extends Activity {
     	Button contTrip = (Button) findViewById(R.id.continue_trip);
     	Button startOrSave = (Button) findViewById(R.id.start_or_save);
     	
-    	if(prefs.getLong("numPtsForAvg", 0l)>0l){
+
+    	if(numDataPts>0l){
     		contTrip.setVisibility(Button.VISIBLE);
+    		
+        	String unitOutput = prefs.getString("units_pref", "MPG");
+
+
+	    	if(runningMpgAvg != 0f){
+				if(unitOutput.equals("MPG")){
+
+	    			currSubDispData = runningMpgAvg;
+	
+	   			}else if(unitOutput.equals("L/100KM")){
+	
+	   				
+					currSubDispData = 235.2/runningMpgAvg;
+	   			}else if(unitOutput.equals("MPG(UK)")){
+	
+	   				
+	   				currSubDispData = runningMpgAvg * 1.201;
+	   			}
+				
+	    	}else{
+	    		currSubDispData = 0.0;
+	    	}
+				mainText.setText(Double.toString(currSubDispData));
+				subText.setText("");
+	
+				unitText.setText("AVG " + prefs.getString("units_pref", "MPG") + "\nFOR TRIP");
+	    	
 
     	}else{
     		contTrip.setVisibility(Button.GONE);
@@ -276,7 +307,7 @@ public class MainActivity extends Activity {
     			currSubDispData = Double.valueOf(df.format(currSubDispData));
     			
     			mpgDataList.add("\t" + curTime+ "> " + Double.toString(currMPG) + "\r");
-    			if(mpgDataList.size() >=128){
+    			if(mpgDataList.size() >=512){
     				writeMpgData(false);
     			}
 				
@@ -422,7 +453,13 @@ public class MainActivity extends Activity {
     	
     		Intent intent = new Intent(this, DisplayMessageActivity.class);
     
+    		
+    		start = new Time();
+			start.setToNow();
+			startTSet = true;
     		startActivityForResult(intent, 0); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
+
+			
     	}else{
 
     		connectDevice(deviceName);
@@ -440,13 +477,18 @@ public class MainActivity extends Activity {
 		SharedPreferences.Editor prefEdit = prefs.edit();
 
 		if(numDataPts > 0l){
-			
+				
 				contTrip.setVisibility(Button.VISIBLE);
 
 				prefEdit.putLong("numPtsForAvg", numDataPts).apply();
 				prefEdit.putFloat("avgMPG", (float)runningMpgAvg).apply();
-				numDataPts = 0l;
-				runningMpgAvg = 0.0;
+
+				
+				if(startTSet == true){
+					writeAvgData();
+					startTSet = false;
+				}
+				
 	
 				writeCommsToFile();
 				writeMpgData(true);
@@ -456,6 +498,9 @@ public class MainActivity extends Activity {
 		
 				      }
 				 });
+				
+				numDataPts = 0l;
+				runningMpgAvg = 0.0;
 				mainText.setText(Double.toString(currSubDispData));
 				subText.setText("");
 	
@@ -509,6 +554,44 @@ public class MainActivity extends Activity {
 		
     }
 
+    public void writeAvgData(){
+	File file = new File(Environment.getExternalStorageDirectory(), "mpg_avgs.txt");
+
+		
+		String str = "";
+		try {
+			 BufferedWriter bW;
+	
+	         bW = new BufferedWriter(new FileWriter(file,true));
+	         	
+	         String date = "Started:" + Integer.toString(start.year)+"-"+Integer.toString(start.month+1)+"-"+Integer.toString(start.monthDay)+
+	        		 "  "+Integer.toString(start.hour)+":"+Integer.toString(start.minute)  +"\r";
+	        str = str.concat(date);
+	        str = str.concat("\t"+Double.toString(runningMpgAvg)+"\r");
+			Time now = new Time();
+			now.setToNow();
+			date = "Ended:" + Integer.toString(now.year)+"-"+Integer.toString(now.month+1)+"-"+Integer.toString(now.monthDay)+
+	        		 "  "+Integer.toString(now.hour)+":"+Integer.toString(now.minute)   +"\r";
+	    
+			
+	    	
+	    
+	    	
+			bW.write(str);
+			bW.newLine();
+            bW.flush();
+            bW.close();
+        	MediaScannerConnection.scanFile(this,  new String[] {file.toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
+      	      public void onScanCompleted(String path, Uri uri) {
+
+      	      }
+      	 });
+		}catch (IOException e) {
+			
+		}
+    	
+    }
+    
     public void writeMpgData(boolean appendTime){
     	
     	File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");

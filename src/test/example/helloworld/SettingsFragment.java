@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 
@@ -18,6 +19,7 @@ public class SettingsFragment extends PreferenceFragment {
 		            Preference pref = (Preference) findPreference(key);
 			        String summary =pref.getSharedPreferences().getString("bt_device", "None");
 			        pref.setSummary(summary);
+			        
 		        }else if(key.equals("units_pref")){
 		        	 Preference pref = (Preference) findPreference(key);
 		        	 
@@ -33,16 +35,24 @@ public class SettingsFragment extends PreferenceFragment {
         .registerOnSharedPreferenceChangeListener(listener);
         // Load the preferences from an XML resource
     	
+        
         addPreferencesFromResource(R.xml.preferences);
         
-        Preference pref = (Preference) findPreference("units_pref");
-        String summary = pref.getSharedPreferences().getString("units_pref", "Mi/G");
-        pref.setSummary(summary);
+
         
-        pref = (Preference) findPreference("bt_device");
-        summary = pref.getSharedPreferences().getString("bt_device", "None");
-        pref.setSummary(summary);
-        pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+        Preference upref = (Preference) findPreference("units_pref");
+        String summary = upref.getSharedPreferences().getString("units_pref", "Mi/G");
+        upref.setSummary(summary);
+
+
+        
+        
+        Preference btpref = (Preference) findPreference("bt_device");
+        summary = btpref.getSharedPreferences().getString("bt_device", "None");
+        
+        
+        btpref.setSummary(summary);
+        btpref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
           @Override
           public boolean onPreferenceClick(Preference preference) {
         	  
@@ -52,6 +62,9 @@ public class SettingsFragment extends PreferenceFragment {
             return true;
           }
         });
+        
+        
+
     }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data){

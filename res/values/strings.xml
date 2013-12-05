@@ -9,6 +9,7 @@
     <string name ="contButt">Continue Trip</string>
     <string name="find_device">Find a Device...</string>
     <string name="action_settings">Settings</string>
+    <string name="view_trips">View Previous Trips</string>
     <string name="hello_world">FuelEconomizer</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="title_activity_display_message">Find OBD2 Bluetooth Device</string>
