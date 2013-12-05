@@ -130,8 +130,36 @@ public class MainActivity extends Activity {
     	Button contTrip = (Button) findViewById(R.id.continue_trip);
     	Button startOrSave = (Button) findViewById(R.id.start_or_save);
     	
+    	
+
     	if(prefs.getLong("numPtsForAvg", 0l)>0l){
     		contTrip.setVisibility(Button.VISIBLE);
+    		        	String unitOutput = prefs.getString("units_pref", "MPG");
+    		
+    		
+    			    	if(runningMpgAvg != 0f){
+    						if(unitOutput.equals("MPG")){
+    		
+    			    			currSubDispData = runningMpgAvg;
+    			
+    			   			}else if(unitOutput.equals("L/100KM")){
+    			
+    			   				
+    							currSubDispData = 235.2/runningMpgAvg;
+    			   			}else if(unitOutput.equals("MPG(UK)")){
+    			
+    			   				
+    			   				currSubDispData = runningMpgAvg * 1.201;
+    			   			}
+    						
+    			    	}else{
+    			    		currSubDispData = 0.0;
+    			    	}
+    						mainText.setText(Double.toString(currSubDispData));
+    						subText.setText("");
+    			
+    						unitText.setText("AVG " + prefs.getString("units_pref", "MPG") + "\nFOR TRIP");
+
 
     	}else{
     		contTrip.setVisibility(Button.GONE);
@@ -276,7 +304,7 @@ public class MainActivity extends Activity {
     			currSubDispData = Double.valueOf(df.format(currSubDispData));
     			
     			mpgDataList.add("\t" + curTime+ "> " + Double.toString(currMPG) + "\r");
-    			if(mpgDataList.size() >=128){
+    			if(mpgDataList.size() >=256){
     				writeMpgData(false);
     			}
 				

@@ -117,13 +117,7 @@ public class obdService {
 			try{
 				mmSocket.connect();
 				
-				mHandler.post(new Runnable(){
-					@Override
-					public void run(){
-						AlertBox("connected", "Connected!");
-					}
-					
-				});
+
 				Message message = mHandler.obtainMessage(MainActivity.CONNECT_SUCCESS, -1, -1);
 
 				message.sendToTarget();
@@ -302,23 +296,23 @@ public class obdService {
 					byteOne = Integer.parseInt(tmpStr.substring(0, tmpStr.indexOf(" ")), 16);
 					byteTwo = Integer.parseInt(tmpStr.substring(tmpStr.indexOf(" ")+1), 16);
 					MAF = (((double)byteOne*256.0)+(double)byteTwo)/100.0;
-					
+					//double LPH = (((double)byteOne*256.0)+(double)byteTwo)*.05;
 					DecimalFormat df = new DecimalFormat("#.##");
 
 					
 					bundle = new Bundle();
 					Message calcMessage = new Message();
 		
-						if(Double.valueOf(df.format(vSpeed)) == 0.00){
+						if(Double.valueOf(df.format(vSpeed)) <= 0.5){
 							
 							MPG = (MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal; //gallons per hour, MAF is in gram/second
-								
+							//MPG = LPH* literGasToGal;	
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 1, -1);
 	
 						}else{
 							//miles pergallon, vspeed is in km/hr, MAF is in grams/seconds
 							MPG = (vSpeed*obdService.kmToMi)/((MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal);
-
+							//MPG =  (vSpeed*obdService.kmToMi)/ (LPH*literGasToGal);
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 0, -1);
 							
 						}

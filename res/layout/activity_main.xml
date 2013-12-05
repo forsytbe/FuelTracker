@@ -16,6 +16,7 @@
         android:textSize="60dp" 
         android:textColor = "@android:color/white"
         android:background ="@drawable/infinity"
+        android:keepScreenOn="true"
         android:paddingTop = "24dp"/>
 
     <TextView
@@ -70,7 +71,7 @@
  
         android:textColor = "@android:color/white"
         android:textAppearance="?android:attr/textAppearanceLarge" 
-        android:textSize="55sp"
+        android:textSize="40sp"
         />
     
     <TextView
