@@ -3,7 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" 
-    
     android:background="@android:color/black">
 
     <TextView
@@ -17,7 +16,6 @@
         android:textSize="60dp" 
         android:textColor = "@android:color/white"
         android:background ="@drawable/infinity"
-
         android:paddingTop = "24dp"/>
 
     <TextView
@@ -72,7 +70,7 @@
  
         android:textColor = "@android:color/white"
         android:textAppearance="?android:attr/textAppearanceLarge" 
-        android:textSize="40sp"
+        android:textSize="55sp"
         />
     
     <TextView

@@ -46,7 +46,6 @@ public class obdService {
 	public int mState = 0;
 	
 	public double vSpeed = 0; //vehicle speed in km/h
-	public double LPH = 0;
 	public double MAF = 0; //mass air flow, g/s
 	public double MPG = 0; //miles/gallon
 	
@@ -118,7 +117,13 @@ public class obdService {
 			try{
 				mmSocket.connect();
 				
-
+				mHandler.post(new Runnable(){
+					@Override
+					public void run(){
+						AlertBox("connected", "Connected!");
+					}
+					
+				});
 				Message message = mHandler.obtainMessage(MainActivity.CONNECT_SUCCESS, -1, -1);
 
 				message.sendToTarget();
@@ -261,7 +266,7 @@ public class obdService {
 					++numSent;
 					break;
 				case 3:
-					obdCommand = "01 5E\r";
+					obdCommand = "01 10\r";
 					++numSent; //this is just incase i add more cases, 
 					numSent =2;
 					break;
@@ -304,17 +309,16 @@ public class obdService {
 					bundle = new Bundle();
 					Message calcMessage = new Message();
 		
-						if(Double.valueOf(df.format(vSpeed)) <= 0.1){
+						if(Double.valueOf(df.format(vSpeed)) == 0.00){
 							
-							//MPG = LPH * literGasToGal; //gallons per hour, MAF is in gram/second
+							MPG = (MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal; //gallons per hour, MAF is in gram/second
 								
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 1, -1);
-							MPG = ((MAF*stoichRatio*3600.0)/obdService.gramGasToGal);
-
+	
 						}else{
-							//miles pergallon, vspeed is in km/hr, MAF is in grams/seconds this is for using MAF, PID 10
+							//miles pergallon, vspeed is in km/hr, MAF is in grams/seconds
 							MPG = (vSpeed*obdService.kmToMi)/((MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal);
-							// MPG = (vSpeed*kmToMi)/(LPH * literGasToGal);
+
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 0, -1);
 							
 						}
