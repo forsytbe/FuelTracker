@@ -10,6 +10,9 @@ import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 
 
+
+
+
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -25,6 +28,7 @@ import android.os.Message;
 import android.text.format.Time;
 import android.util.Log;
 import android.widget.ArrayAdapter;
+import android.widget.ProgressBar;
 
 public class obdService {
 	
@@ -113,13 +117,7 @@ public class obdService {
 			try{
 				mmSocket.connect();
 				
-				mHandler.post(new Runnable(){
-					@Override
-					public void run(){
-						AlertBox("connected", "Connected!");
-					}
-					
-				});
+
 				Message message = mHandler.obtainMessage(MainActivity.CONNECT_SUCCESS, -1, -1);
 
 				message.sendToTarget();
@@ -127,15 +125,8 @@ public class obdService {
 				
 			}catch(IOException connectException){
 		
-				final String errMess = "Device not available.  Please find a device.";
-				
-				mHandler.post(new Runnable(){
-					@Override
-					public void run(){
-						AlertBox("Bluetooth device not available", errMess);
-					}
-				});
-				Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, -1, -1);
+    			
+				Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, 0, -1);
 
 				message.sendToTarget();
 				
@@ -197,25 +188,24 @@ public class obdService {
 			
 			//first message we want to resest device, turn off echo, try to set protocal to Iso 9141
 			//isConnected is API 14 or greater
-			if(mmSocket.isConnected()){
-
+			Message message = new Message();
 				
-				Message message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
-				
-				Bundle bundle = new Bundle();
-				bundle.putBoolean("writeTime",true);
-				message.setData(bundle);
-				message.sendToTarget();
-				
-				
-				obdCommand = "AT WS\r";
+			message = mHandler.obtainMessage(MainActivity.WRITE_FILE, -1, -1);
+			
+			Bundle bundle = new Bundle();
+			bundle.putBoolean("writeTime",true);
+			message.setData(bundle);
+			message.sendToTarget();
+			
+			
+			obdCommand = "AT WS\r";
+			try{
 				write(obdCommand.getBytes());
-				
+
+			
 				while(mmSocket.isConnected()){
-					
-						try{
-		
-							bytes = mmInStream.read(buffer);
+	
+							bytes = mmInStream.read(buffer); //this throws an exception as well
 							
 							String sb = new String(buffer, 0, bytes);
 						
@@ -227,24 +217,28 @@ public class obdService {
 								bundle.putString("commData", sb);
 								message.setData(bundle);
 								message.sendToTarget();
-								
-								parseResponse(sb, bytes);	
+
+								parseResponse(sb, bytes);	//this throws an exception if write fails
+
 								//message = mHandler.obtainMessage(MainActivity.MESSAGE_READ, -1, -1, sb);						
 							}				
-						}catch(IOException e){	
-							break;
-						}
-				}
-				
-			}
-			mState = 0;
-			Message message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, -1, -1);
 
-			message.sendToTarget();
-			cancel();
+				}
+			
+			}catch(IOException e){
+			
+			
+		
+				mState = STATE_UNCONNECTED;
+				message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, 1, -1);
+	
+				message.sendToTarget();
+				cancel();
+			}
+			
 		}
 		
-		public void parseResponse(String response, int numBytes){
+		public void parseResponse(String response, int numBytes) throws IOException{
 			String tmpStr = new String();
 		
 			int byteOne, byteTwo;
@@ -276,7 +270,11 @@ public class obdService {
 				bundle.putString("commData", obdCommand);
 				message.setData(bundle);
 				message.sendToTarget();
-				write(obdCommand.getBytes());
+				try{
+					write(obdCommand.getBytes());
+				}catch(IOException e){
+					throw new IOException();
+				}
 			}
 			
 			if(response.contains("41")){
@@ -298,22 +296,23 @@ public class obdService {
 					byteOne = Integer.parseInt(tmpStr.substring(0, tmpStr.indexOf(" ")), 16);
 					byteTwo = Integer.parseInt(tmpStr.substring(tmpStr.indexOf(" ")+1), 16);
 					MAF = (((double)byteOne*256.0)+(double)byteTwo)/100.0;
-					
+					//double LPH = (((double)byteOne*256.0)+(double)byteTwo)*.05;
 					DecimalFormat df = new DecimalFormat("#.##");
 
 					
 					bundle = new Bundle();
 					Message calcMessage = new Message();
 		
-						if(Double.valueOf(df.format(vSpeed)) == 0.00){
+						if(Double.valueOf(df.format(vSpeed)) <= 0.5){
 							
-							MPG = MAF; //gallons per hour, MAF is in gram/second
-								
+							MPG = (MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal; //gallons per hour, MAF is in gram/second
+							//MPG = LPH* literGasToGal;	
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 1, -1);
 	
 						}else{
 							//miles pergallon, vspeed is in km/hr, MAF is in grams/seconds
-							MPG = (vSpeed)/(MAF);
+							MPG = (vSpeed*obdService.kmToMi)/((MAF*obdService.stoichRatio*3600.0)/obdService.gramGasToGal);
+							//MPG =  (vSpeed*obdService.kmToMi)/ (LPH*literGasToGal);
 							calcMessage = mHandler.obtainMessage(MainActivity.WRITE_SCREEN, 0, -1);
 							
 						}
@@ -333,17 +332,21 @@ public class obdService {
 		}
 		
 		
-		public void write(byte[] data){
+		public void write(byte[] data) throws IOException{
 				
 			try{
 				mmOutStream.write(data);
-			}catch(IOException e){}
+			}catch(IOException e){
+				throw new IOException();
+			}
 		}
 		
 		
 		
 		public void cancel(){
 			try{
+				mmInStream.close();
+				mmOutStream.close();
 				mmSocket.close();
 				mState = STATE_UNCONNECTED;
 
@@ -363,7 +366,7 @@ public class obdService {
 		mConnectedThread.start();
 	}
 	
-    public void write(byte[] out) {
+    public void write(byte[] out) throws IOException{
         // Create temporary object
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread

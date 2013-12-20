@@ -13,6 +13,9 @@ import java.util.ArrayList;
 
 
 
+
+import java.util.Hashtable;
+
 import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
@@ -31,10 +34,16 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences.Editor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.bluetooth.*;
 
@@ -47,6 +56,8 @@ public class MainActivity extends Activity {
 	ArrayList<String> mpgDataList = new ArrayList<String>();
 	TextView mainText;
 	TextView subText;
+	TextView appText;
+	TextView unitText;
 	
 	public static final int WRITE_SCREEN = 1;	        
 	public static final int WRITE_PROMPT = 2;
@@ -55,28 +66,60 @@ public class MainActivity extends Activity {
 	public static final int CONNECT_SUCCESS = 5;
 	public static final int CONNECT_FAILURE = 6;
 	
+	public static enum fileStates {START, END, INPROG};
+	
 	private double currDisplayData = 0.0;
 	private double currSubDispData = 0.0;
 	private double currMPG = 0.0;
 	private long numDataPts = 0L;
 	
+	private double currSUM = 0.0;
+	private long currNDP = 0L;
 	private double runningMpgAvg = 0.0;
-	
+	private Time start = null;
+		
+
+	private boolean startTSet = false;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
         
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        runningMpgAvg = prefs.getFloat("avgMpg", 0.0f);
-        numDataPts = prefs.getLong("numPtsForAvg", 0l);
+
+        
+		ProgressBar waiting = (ProgressBar) findViewById(R.id.loadingContent);
+		waiting.setVisibility(ProgressBar.GONE);
         
         
         cmdPrompt = new ArrayAdapter<String>(this, android.R.layout.list_content);
+        appText = (TextView) findViewById(R.id.appName);
         mainText = (TextView) findViewById(R.id.mainDisplay);
         subText = (TextView) findViewById(R.id.subDisplay);
+        unitText = (TextView) findViewById(R.id.unitDisplay);
+        
+        //setTF(this, "font/fedserviceextrabold.TFF", mainText);
+        Typeface typeFace = Typeface.createFromAsset(getApplicationContext().getAssets(), "font/Magenta_BBT.ttf");
+        appText.setTypeface(typeFace);
+        typeFace = Typeface.createFromAsset(getApplicationContext().getAssets(), "font/orbitron-black.otf");
+        mainText.setTypeface(typeFace);
+        subText.setTypeface(typeFace);
+        typeFace = Typeface.createFromAsset(getApplicationContext().getAssets(), "font/orbitron-bold.otf");
+        unitText.setTypeface(typeFace);
+
+       // Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.infinity);
+
+        //Drawable d = new BitmapDrawable(getResources(), bm);
+        
+        
+        //appText.setCompoundDrawablesRelativeWithIntrinsicBounds (R.drawable.infinity, 0, 0, 0);
+        
         
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		if(mBluetoothAdapter == null){
@@ -90,19 +133,75 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart(){
     	super.onStart();
-    	Button findDev = (Button) findViewById(R.id.find_device);
+    	
+    	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+    	Button contTrip = (Button) findViewById(R.id.continue_trip);
     	Button startOrSave = (Button) findViewById(R.id.start_or_save);
+        runningMpgAvg = prefs.getFloat("avgMpg", 0.0f);
+        numDataPts = prefs.getLong("numPtsForAvg", 0l);
+		currSUM = prefs.getFloat("currSUM", 0.0f);
+		currNDP = prefs.getLong("currNDP", 0l);
+
+
+    	if(currNDP>0l){
+        	double calcedAvg = currSUM/currNDP;
+    		contTrip.setVisibility(Button.VISIBLE);
+        	String unitOutput = prefs.getString("units_pref", "MPG");
+
+
+	    	if(calcedAvg > 0f){
+				if(unitOutput.equals("MPG")){
+
+	    			currSubDispData = calcedAvg;
+	
+	   			}else if(unitOutput.equals("L/100KM")){
+	
+	   				
+					currSubDispData = 235.2/calcedAvg;
+	   			}else if(unitOutput.equals("MPG(UK)")){
+	
+	   				
+	   				currSubDispData = calcedAvg * 1.201;
+	   			}
+				
+	    	}else{
+	    		currSubDispData = 0.0;
+	    	}
+			mainText.setText(Double.toString(currSubDispData));
+			
+			DecimalFormat df = new DecimalFormat("#.00");
+			double ltAVG =0.0;
+			if(numDataPts >0L){
+				ltAVG = runningMpgAvg/numDataPts;
+			}
+			String temp;
+			if(ltAVG <.1 ){
+				temp = "0.0";
+			}else{
+				
+				temp = df.format(ltAVG);
+
+			}
+			subText.setText("Lifetime AVG: " + temp );
+
+			unitText.setText("AVG " + prefs.getString("units_pref", "MPG") + "\nFOR TRIP");
+
+
+    	}else{
+    		contTrip.setVisibility(Button.GONE);
+
+    	}
+
     	if(!mobdService.isConnected()){
     		startOrSave.setText(R.string.start);
     		startOrSave.setOnClickListener(new View.OnClickListener() {
     			@Override
                 public void onClick(View v) {
                
-                	startService();
+                	startService(false);
 
                 }
             });
-    		findDev.setVisibility(Button.VISIBLE);
     	}else{
     		startOrSave.setText(R.string.saveBut);
     		startOrSave.setOnClickListener(new View.OnClickListener() {
@@ -111,7 +210,6 @@ public class MainActivity extends Activity {
                 	endAndSave();
                 }
             });
-    		findDev.setVisibility(Button.GONE);
     	}
     }
 
@@ -120,10 +218,14 @@ public class MainActivity extends Activity {
     	@Override
     	public void handleMessage(Message msg) {
 			Button startOrSave = (Button) findViewById(R.id.start_or_save);
-    		Button findDev = (Button) findViewById(R.id.find_device);
+    		Button contTrip= (Button) findViewById(R.id.continue_trip);
+    		ProgressBar waiting = (ProgressBar) findViewById(R.id.loadingContent);
+    		waiting.setVisibility(ProgressBar.GONE);
     		
     		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
     		String unitOutput = ""; 
+			DecimalFormat df = new DecimalFormat("#.00");
+
     		switch (msg.what) {
     		
     		case WRITE_PROMPT:
@@ -137,9 +239,13 @@ public class MainActivity extends Activity {
     			break;
     		case WRITE_FILE:
     			
-    				
-    				writeCommsToFile();
-    				writeMpgData(true); //write_file message is only sent when the time should be appended (pass true)
+        		
+        		start = new Time();
+        		start.setToNow();
+        		startTSet = true;
+
+				writeCommsToFile();
+				writeMpgData(fileStates.START); //write_file message is only sent when the time should be appended (pass true)
     				//writeMpgData(msg.getData().getBoolean("writeTime"));
     			
     			
@@ -147,13 +253,12 @@ public class MainActivity extends Activity {
     		case WRITE_SCREEN:
     			Time now = new Time();
     			now.setToNow();
-    			String curTime = Integer.toString(now.hour) + ":" + Integer.toString(now.minute) + ":" +Integer.toString(now.second);
+    			String curTime = "\"" + Integer.toString(now.hour) + "h" + Integer.toString(now.minute) + "m" +Integer.toString(now.second)+"s\" : ";
     			
-    			DecimalFormat df = new DecimalFormat("#.##");
-    			unitOutput = prefs.getString("units_pref", "Mpg");
+    			unitOutput = prefs.getString("units_pref", "MPG");
     			
     			
-    			currMPG = msg.getData().getDouble("mpgData");
+    			currMPG = msg.getData().getDouble("mpgData");//this comes back as MPG regardless of user preference
     			++numDataPts;
     			currDisplayData = currMPG;
     			//currMPG is what is written to the file.  The file is ALWAYS stored as MPG, regardless of user preference
@@ -163,99 +268,79 @@ public class MainActivity extends Activity {
     			//every iteration we just add the new point to the set
     	
     			//Case 0 is standard, engine running displaying mpg.  1 is engine idling, 2 engine is off (mpg = 0)
-
+    			double calcedAvg = 0.0;
+    			
     			switch(msg.arg1){
 
 	    			case 0:
-	        			currMPG *= obdService.kmToMi/((obdService.stoichRatio*3600)/obdService.gramGasToGal);
-	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
-	        			
-	        			if(unitOutput.equals("Mpg")){
+	        			currSUM +=currMPG;
+	        			++currNDP;
+	    				calcedAvg = currSUM/currNDP;
+	        			runningMpgAvg  += currMPG;
+
+	        			if(unitOutput.equals("MPG")){
 	        				//this will convert km/h to mi/h
 	       				 	//this converts a gram of gas/second to gallon/hour
 	        				currDisplayData = currMPG;
-		        			currSubDispData = runningMpgAvg;
+		        			currSubDispData = calcedAvg;
 
-		       			}else if(unitOutput.equals("L/100km")){
-		       				//this yields kmPerHour/gramsGasPerHour == km/gramGas
-		       				currDisplayData *= 100.0/((obdService.stoichRatio*3600.0)/obdService.gramGasToLiter); // now 100km/literGas
-		       				currDisplayData = 1.0/currDisplayData; //Liter/100km
+		       			}else if(unitOutput.equals("L/100KM")){
+
+		       				currDisplayData = 235.2/currMPG;
 		       				
+		    				currSubDispData = 235.2/calcedAvg;
+		       			}else if(unitOutput.equals("MPG(UK)")){
+		       				currDisplayData =currMPG*1.201;
 		       				
-		    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
-		        			currSubDispData = 1.0/currSubDispData;
-		       			}else if(unitOutput.equals("Mpg(UK)")){
-		       				currDisplayData *=(obdService.kmToMi)/ ((3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal);
-		       				
-		       				currSubDispData = runningMpgAvg * (1.0/obdService.galGasToImpGal);
+		       				currSubDispData = calcedAvg * 1.201;
 		       			}
 	        			
 	        			break;
 	    			case 1:
-	        			currMPG = 0.0;
-	        			runningMpgAvg = ((((double)numDataPts-1) * runningMpgAvg) + currMPG)/((double)numDataPts);
+	        			currSUM +=0.0;
+	        			++currNDP;
+	    				calcedAvg = currSUM/currNDP;
+	        			runningMpgAvg +=  0.0;//0.0 because thats the mpg youre getting
+	        			if(unitOutput.contentEquals("MPG")){
+	        				//currMPG is coming back as gal/hour for case1
+	        				currDisplayData = currMPG;
+	        				unitOutput = "G/HR";
+	        				
+		        			currSubDispData = calcedAvg;
+
+		       			}else if(unitOutput.contentEquals("L/100KM")){
+		       				currDisplayData = currMPG*3.7854;
+		       				unitOutput = "L/HR";
+
+		    				currSubDispData = 235.2/ calcedAvg;
+		       			}else if(unitOutput.contentEquals("MPG(UK)")){
+		       				currDisplayData = currMPG*0.83267;
+		       				unitOutput = "G(UK)/HR";
+		       				currSubDispData =  calcedAvg * 1.201;
+
+		       			}
 	        			
-	    				if(prefs.getBoolean("idle_stats_pref", true)){
-		        			if(unitOutput.equals("Mpg")){
-		        				
-		       				 	//this converts a gram of air/second (the MAF stored in currMPG) to gallon/hour
-		        				currDisplayData = (currDisplayData * ( 3600.0* obdService.stoichRatio))/obdService.gramGasToGal;
-		        				unitOutput = "G/Hr";
-		        				
-			        			currSubDispData = runningMpgAvg;
+		        		if(!prefs.getBoolean("idle_stats_pref",true)){
 
-			       			}else if(unitOutput.equals("L/100km")){
-			       				currDisplayData = (currDisplayData *obdService.stoichRatio*3600.0)/obdService.gramGasToLiter;//liter/hour
-			       				unitOutput = "L/Hr";
-	
-			    				currSubDispData = runningMpgAvg * ((obdService.miToKm*100.0)/obdService.literGasToGal);
-			        			currSubDispData = 1.0/currSubDispData;
-			       			}else if(unitOutput.equals("Mpg(UK)")){
-			       				currDisplayData =(currDisplayData* 3600.0* obdService.stoichRatio)/obdService.gramGasToImpGal ;
-			       				unitOutput = "G(UK)/Hr";
-			       			}
-	    				}else{
 	    					currDisplayData = 0.0;
-		       				currSubDispData = runningMpgAvg * (1.0/obdService.galGasToImpGal);
-
+	    					unitOutput = prefs.getString("units_pref", "MPG");
 	    				}
 
-
-	    				currMPG = 0.0;
-	    				
 	        			break;
-	    			case 2:
-	    				currMPG = msg.getData().getDouble("mpgData");
-	    				
-	    				currDisplayData = currMPG;
-	        			currSubDispData = runningMpgAvg;
-
-	    				unitOutput = "";
-	        			break;
-
     			}
     			
-       			
     			
-
-    			SharedPreferences.Editor prefEdit = prefs.edit();
-    			prefEdit.putLong("numPtsForAvg", numDataPts);
-    			prefEdit.putFloat("avgMPG", (float)runningMpgAvg);
-    			currMPG = Double.valueOf(df.format(currMPG));
-    			currDisplayData = Double.valueOf(df.format(currDisplayData));
-    			currSubDispData = Double.valueOf(df.format(currSubDispData));
-    			
-    			mpgDataList.add("\t" + curTime+ "> " + Double.toString(currMPG) + "\r");
-    			if(mpgDataList.size() >=128){
-    				writeMpgData(false);
+    			mpgDataList.add("\t\t" + curTime+  df.format(currMPG) + ",\r");
+    			if(mpgDataList.size() >=256){
+    				writeMpgData(fileStates.INPROG);
     			}
 				
             	
-        		TextView unitText = (TextView) findViewById(R.id.unitDisplay);
 
             	
-    			mainText.setText(Double.toString(currDisplayData) + unitOutput);
-    			subText.setText("Avg for this trip: " + Double.toString(currSubDispData)+prefs.getString("units_pref", "Mpg"));
+    			mainText.setText(df.format(currDisplayData));
+    			subText.setText("AVG "+ prefs.getString("units_pref", "MPG") + ": " + df.format(currSubDispData));
+    			unitText.setText(unitOutput);
     			break;
     			
     		case CONNECT_SUCCESS:
@@ -267,24 +352,29 @@ public class MainActivity extends Activity {
                     	endAndSave();
                     }
                 });
-        		findDev.setVisibility(Button.GONE);
+        		contTrip.setVisibility(Button.GONE);
         		
         		
 
         		break;
         		
     		case CONNECT_FAILURE:
+    			//case 0 = the connection never happened, case 1 is a disconnect
+    			
+    			switch(msg.arg1){
+    			case 0:
+    				final String errMess = "Device not available.  Please find a device.";
+    				final String title = "Connection Failed";
+    				connectExceptAlert(title, errMess);
 
-        		startOrSave.setText(R.string.start);
-        		startOrSave.setOnClickListener(new View.OnClickListener() {
-        			@Override
-                    public void onClick(View v) {
-                   
-                    	startService();
+    				break;
+    			case 1:
+    				waiting.setVisibility(ProgressBar.VISIBLE);
 
-                    }
-                });
-        		findDev.setVisibility(Button.VISIBLE);
+    				break;
+    			}
+
+        		endAndSave();
         		break;
     		}
     	}	
@@ -301,11 +391,17 @@ public class MainActivity extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
+    	Intent intent;
         switch (item.getItemId()) {
             case R.id.action_settings:
                 // Display the fragment as the main content.
-            	Intent intent = new Intent(this, SettingsActivity.class);
+            	intent = new Intent(this, Settings.class);
             	startActivityForResult(intent, 1);
+                return true;
+            case R.id.view_prev_trips:
+                // Display the fragment as the main content.
+            	intent = new Intent(this, ViewPrevActivity.class);
+            	startActivity(intent);
                 return true;
                 
             default:
@@ -316,27 +412,33 @@ public class MainActivity extends Activity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-  
-    	if (resultCode == Activity.RESULT_OK) {
-    		
-			SharedPreferences.Editor prefs = PreferenceManager.getDefaultSharedPreferences(this).edit();
-	        String deviceData = data.getExtras()
-	                .getString(DisplayMessageActivity.DEVICE_DATA);
-	        prefs.putString("bt_device", deviceData).apply();
-	        
-		}
+    	switch(requestCode){
+    	
+    	case 0:
+	    	if (resultCode == Activity.RESULT_OK) {
+	    		
+				SharedPreferences.Editor prefs = PreferenceManager.getDefaultSharedPreferences(this).edit();
+		        String deviceData = data.getExtras()
+		                .getString(DisplayMessageActivity.DEVICE_DATA);
+		        prefs.putString("bt_device", deviceData).apply();
+		        
+			}
+    	}
 	    		
     		
     }
 
-    private void connectDevice(String deviceData) {
+    private void connectDevice(String deviceData){
         // Get the device MAC address
 
     	String address = deviceData.substring(deviceData.indexOf('\n')+1);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
+		ProgressBar waiting = (ProgressBar) findViewById(R.id.loadingContent);
+		waiting.setVisibility(ProgressBar.VISIBLE);
         mobdService.connect(device);
+        
 
         
         
@@ -358,60 +460,118 @@ public class MainActivity extends Activity {
     
     @Override
     public void onStop(){
-
-    	endAndSave();
+    	if(mobdService.isConnected()){
+    		endAndSave();
+    	}
 
 		super.onStop();
     }
     
-	public void startService(){
+    public void continueTrip(View v){
+    	SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+
+    	startService(true);
+    }
+    
+	public void startService(boolean cont ){
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     	
+		if(!cont){
+			currSUM = 0.0;
+			currNDP = 1L;
+		}
     	String deviceName = prefs.getString("bt_device", "None");
     	if(deviceName.equals("None")){
     
     	
     		Intent intent = new Intent(this, DisplayMessageActivity.class);
     
+
+
     		startActivityForResult(intent, 0); //My displayMessageActivity needs renamed, but this allows the user to select a BT device
     	}else{
-    		
-    		connectDevice(deviceName);
 
+    		connectDevice(deviceName);
 
     	}
     }
   
 	public void endAndSave(){
+		mobdService.stop();
+		Button startOrSave = (Button) findViewById(R.id.start_or_save);
+		Button contTrip = (Button) findViewById(R.id.continue_trip);
+		ProgressBar waiting = (ProgressBar) findViewById(R.id.loadingContent);
+
 		SharedPreferences prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		SharedPreferences.Editor prefEdit = prefs.edit();
-		prefEdit.putLong("numPtsForAvg", numDataPts);
-		prefEdit.putFloat("avgMPG", (float)runningMpgAvg);
-		if(mobdService.isConnected()){
-			mobdService.stop();
+
+		if(currNDP > 0l){
+			
+				contTrip.setVisibility(Button.VISIBLE);
+
+				prefEdit.putLong("numPtsForAvg", numDataPts).apply();
+				prefEdit.putFloat("avgMPG", (float)runningMpgAvg).apply();
+				
+				prefEdit.putLong("currNDP", currNDP).apply();
+				prefEdit.putFloat("currSUM", (float)currSUM).apply();
+				
+				if(startTSet == true){
+						writeAvgData();
+						startTSet = false;
+				}
+
+
 	
-			writeCommsToFile();
-			writeMpgData(true);
-			File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
-			MediaScannerConnection.scanFile(this,  new String[] {file.toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
-			      public void onScanCompleted(String path, Uri uri) {
+				writeCommsToFile();
+				writeMpgData(fileStates.END);
+				File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.json");
+				MediaScannerConnection.scanFile(this,  new String[] {file.toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
+				      public void onScanCompleted(String path, Uri uri) {
+		
+				      }
+				 });
+				mainText.setText(Double.toString(currSubDispData));
+				DecimalFormat df = new DecimalFormat("#.00");
+				double ltAVG = 0.0;
+				if(numDataPts >0L){
+					ltAVG = runningMpgAvg/numDataPts;
+				}
+				
+				String temp;
+				if(ltAVG <.1 ){
+					temp = "0.0";
+				}else{
+				
+					temp = df.format(ltAVG);
+
+				}
+				subText.setText("Lifetime AVG: " + temp );
+			
 	
-			      }
-			 });
+				unitText.setText("AVG " + prefs.getString("units_pref", "MPG") + "\nFOR TRIP");
+			
+		}else if(prefs.getLong("numPtsForAvg", 0l)> 0l){
+			contTrip.setVisibility(Button.VISIBLE);
+
+			
+		}else{
+		
+			contTrip.setVisibility(Button.GONE);
+
 		}
-		Button startOrSave = (Button) findViewById(R.id.start_or_save);
-		Button findDev = (Button) findViewById(R.id.find_device);
+		
 		startOrSave.setText(R.string.start);
 		startOrSave.setOnClickListener(new View.OnClickListener() {
 			@Override
             public void onClick(View v) {
            
-            	startService();
+            	startService(false);
 
             }
         });
-		findDev.setVisibility(Button.VISIBLE);
 		 
+		waiting.setVisibility(ProgressBar.GONE);
 	}
 	
     public void writeCommsToFile(){
@@ -439,9 +599,49 @@ public class MainActivity extends Activity {
 		
     }
 
-    public void writeMpgData(boolean appendTime){
+    
+        public void writeAvgData(){
+    		File file = new File(Environment.getExternalStorageDirectory(), "mpg_avgs.json");
     	
-    	File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.txt");
+    			
+    			String str = "";
+    			try {
+    				 BufferedWriter bW;
+    				 DecimalFormat df = new DecimalFormat("#.00");
+    				 double calcedAvg = currSUM/currNDP;
+
+    				 
+    		         bW = new BufferedWriter(new FileWriter(file,true));
+    		         str= str.concat("Session : {\r");
+    		         String date = "\t\"Started\" : " + "\"" + Integer.toString(start.year)+"-"+Integer.toString(start.month+1)+"-"+Integer.toString(start.monthDay)+
+    		        		 "  "+Integer.toString(start.hour)+"h"+Integer.toString(start.minute)+"m"  + "\"," +"\r";
+    		        str = str.concat(date);
+    		        str = str.concat("\t" + "\""+ "AverageMPG" + "\" : " +  df.format(calcedAvg)+",\r");
+    				Time now = new Time();
+    				now.setToNow();
+    				date = "\t\"Ended\" : " +  "\"" + Integer.toString(now.year)+"-"+Integer.toString(now.month+1)+"-"+Integer.toString(now.monthDay)+
+    		        		 "  "+Integer.toString(now.hour)+"h"+Integer.toString(now.minute)+ "m" +  "\"" +"\r}\r";
+    				str = str.concat(date);
+    		    
+    		    	
+    				bW.write(str);
+    				bW.newLine();
+    	            bW.flush();
+    	            bW.close();
+    	        	MediaScannerConnection.scanFile(this,  new String[] {file.toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
+    	      	      public void onScanCompleted(String path, Uri uri) {
+    	
+    	      	      }
+    	      	 });
+    			}catch (IOException e) {
+    				
+    			}
+    	    	
+    	    }
+
+    public void writeMpgData(fileStates currState){
+    	
+    	File file = new File(Environment.getExternalStorageDirectory(), "mpg_data.json");
 
 		
 		String str = "";
@@ -449,17 +649,30 @@ public class MainActivity extends Activity {
 			 BufferedWriter bW;
 	
 	         bW = new BufferedWriter(new FileWriter(file,true));
-	    	if(mpgDataList.size()>0){	
-		    	for(int i =0; i< mpgDataList.size(); ++i){
-		    		str = str.concat(mpgDataList.get(i));
-		    	}
-		    	mpgDataList.clear();
-	    	}
-
-	    	if(appendTime){
+	         
+	    	if(currState == fileStates.START){
 				Time now = new Time();
 				now.setToNow();
-				String date = Integer.toString(now.year)+"-"+Integer.toString(now.month+1)+"-"+Integer.toString(now.monthDay) +"\r";
+				 str =str.concat("Session : {\r");
+		         String date = "\t\"Started\" : " +  "\"" + Integer.toString(now.year)+"-"+Integer.toString(now.month+1)+"-"+Integer.toString(now.monthDay)+
+		        		 "  "+Integer.toString(now.hour)+"h"+Integer.toString(now.minute)+ "m" +  "\""  +"\r\t"  +  "\"MpgValArr\" : [\r";
+		    
+				str = str.concat(date);
+	    	}
+
+	    	for(int i =0; i< mpgDataList.size(); ++i){
+	    		str = str.concat(mpgDataList.get(i));
+	    	}
+	    	mpgDataList.clear();
+	    	
+
+	         
+	    	if(currState == fileStates.END){
+				Time now = new Time();
+				now.setToNow();
+
+		         String date = "\t]\r\t\"Ended\" : " +  "\"" + Integer.toString(now.year)+"-"+Integer.toString(now.month+1)+"-"+Integer.toString(now.monthDay)+
+		        		 "  "+Integer.toString(now.hour)+"h"+Integer.toString(now.minute)+ "m"  +  "\""+"\r}";
 		    
 				str = str.concat(date);
 	    	}
@@ -475,6 +688,7 @@ public class MainActivity extends Activity {
 		}
 
     }
+   
     
 	public void AlertBox( String title, String message ){
 	    new AlertDialog.Builder(this)
@@ -486,5 +700,23 @@ public class MainActivity extends Activity {
 	        }
 	    }).show();
 	  }
+	
+	public void connectExceptAlert(String title, String message){
+	    new AlertDialog.Builder(this)
+	    .setTitle( title )
+	    .setMessage( message )
+	    .setPositiveButton("Find Device", new OnClickListener() {
+	        public void onClick(DialogInterface arg0, int arg1) {
+	    		Intent intent = new Intent(getApplicationContext(), DisplayMessageActivity.class);
+	    	    
+	    		startActivityForResult(intent, 0);
+	        }
+	    })
+	    .setNegativeButton("Cancel", new OnClickListener() {
+	        public void onClick(DialogInterface arg0, int arg1) {
+	   
+	        }
+	    }).show();
+	}
     
 }

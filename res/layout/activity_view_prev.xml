@@ -6,35 +6,19 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context=".DisplayMessageActivity"
-    android:background="@android:color/black" >
-
-
-
-    <TextView
-        android:id="@+id/btStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:textColor = "@android:color/white"  
-        android:text="@string/test" />
-
+    tools:context=".ViewPrevActivity" 
+        android:background="@android:color/black" >
 
     <ListView
-        android:id="@+id/btDevList"
+        android:id="@+id/trip_list"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="match_parent"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="12dp"
+        android:divider = "#ffffffff"
+        android:dividerHeight = "1dp"
 		android:background="@android:color/black"
 		android:textColor = "@android:color/white">
    </ListView>
-
-
- 
-
-
 </RelativeLayout>

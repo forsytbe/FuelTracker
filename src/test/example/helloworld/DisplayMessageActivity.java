@@ -77,7 +77,7 @@ public class DisplayMessageActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setupActionBar();
 		
-		mArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+		mArrayAdapter = new ArrayAdapter<String>(this, R.layout.custom_list_item_1);
 
 		setContentView(R.layout.activity_display_message);
 		
