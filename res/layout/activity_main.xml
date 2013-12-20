@@ -11,9 +11,9 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="22dp"
+
         android:text="@string/app_name"
-        android:textSize="60dp" 
+        android:textSize="48sp" 
         android:textColor = "@android:color/white"
         android:background ="@drawable/infinity"
         android:keepScreenOn="true"
@@ -25,10 +25,11 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/appName"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop = "-20dp"
+
         android:textColor = "@android:color/white"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textSize="100sp" 
+        android:textSize="110sp" 
         android:maxLines = "1"
     />
      <ProgressBar
@@ -81,7 +82,7 @@
         android:layout_below="@+id/appName"
         android:layout_alignParentLeft="true"
         
-        android:layout_marginTop="250dp"
+        android:layout_marginTop="215dp"
         android:layout_marginLeft ="15dp"
         android:textColor = "@android:color/white"
         android:textAppearance="?android:attr/textAppearanceLarge" 

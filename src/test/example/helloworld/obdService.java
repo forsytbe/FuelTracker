@@ -229,7 +229,7 @@ public class obdService {
 			
 			
 		
-				mState = 0;
+				mState = STATE_UNCONNECTED;
 				message = mHandler.obtainMessage(MainActivity.CONNECT_FAILURE, 1, -1);
 	
 				message.sendToTarget();
